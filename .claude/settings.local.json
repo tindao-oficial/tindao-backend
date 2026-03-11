@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"C:\\\\Users\\\\Breno\\\\Documents\\\\projetos\\\\tindao-backend\" && rm -rf src/modules/post && rm -f test/modules/post.service.spec.ts && rm -f test/common/mcp.tools.service.spec.ts && rm -f test/common/mcp.resources.service.spec.ts && rm -f test/common/mcp.prompts.service.spec.ts)",
+      "Bash(cd \"C:\\\\Users\\\\Breno\\\\Documents\\\\projetos\\\\tindao-backend\" && yarn generate 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\Breno\\\\Documents\\\\projetos\\\\tindao-backend\" && yarn prisma:generate 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\Breno\\\\Documents\\\\projetos\\\\tindao-backend\" && yarn install 2>&1 | tail -5)",
+      "Bash(cd \"C:\\\\Users\\\\Breno\\\\Documents\\\\projetos\\\\tindao-backend\" && yarn install --ignore-engines 2>&1 | tail -10)",
+      "Bash(cd \"C:\\\\Users\\\\Breno\\\\Documents\\\\projetos\\\\tindao-backend\" && yarn prisma:migrate 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\Breno\\\\Documents\\\\projetos\\\\tindao-backend\" && yarn build 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\Breno\\\\Documents\\\\projetos\\\\tindao-backend\" && yarn test 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\Breno\\\\Documents\\\\projetos\\\\tindao-backend\" && yarn add -D concurrently --ignore-engines 2>&1 | tail -5)"
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 services:
     postgres:
         image: postgres:16-alpine
-        container_name: nestjs-postgres
+        container_name: tindao-postgres
         restart: unless-stopped
         ports:
             - '5432:5432'
@@ -22,7 +22,7 @@ services:
 
     redis:
         image: redis:7-alpine
-        container_name: nestjs-redis
+        container_name: tindao-redis
         restart: unless-stopped
         ports:
             - '6379:6379'
@@ -43,8 +43,8 @@ services:
             context: .
             dockerfile: Dockerfile
             cache_from:
-                - nestjs-app:latest
-        container_name: nestjs-app
+                - tindao-app:latest
+        container_name: tindao-app
         restart: unless-stopped
         ports:
             - '3001:3001'
@@ -67,12 +67,12 @@ services:
 networks:
     app-network:
         driver: bridge
-        name: nestjs-network
+        name: tindao-network
 
 volumes:
     postgres_data:
         driver: local
-        name: nestjs-postgres-data
+        name: tindao-postgres-data
     redis_data:
         driver: local
-        name: nestjs-redis-data
+        name: tindao-redis-data

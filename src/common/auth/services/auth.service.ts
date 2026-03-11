@@ -74,7 +74,7 @@ export class AuthService implements IAuthService {
 
     public async signup(data: UserCreateDto): Promise<AuthResponseDto> {
         try {
-            const { email, firstName, lastName, password } = data;
+            const { email, firstName, lastName, password, isOrganizer } = data;
 
             const existingUser = await this.databaseService.user.findUnique({
                 where: { email },
@@ -98,6 +98,7 @@ export class AuthService implements IAuthService {
                     lastName: lastName?.trim(),
                     role: Role.USER,
                     userName: faker.internet.username(),
+                    isOrganizer: isOrganizer ?? false,
                 },
             });
 

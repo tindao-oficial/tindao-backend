@@ -1,8 +1,12 @@
 import { faker } from '@faker-js/faker';
 import { ApiProperty } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+    IsArray,
+    IsBoolean,
+    IsDate,
     IsEmail,
+    IsNumber,
     IsOptional,
     IsString,
     MaxLength,
@@ -48,4 +52,72 @@ export class UserUpdateDto {
     @IsString()
     @IsOptional()
     avatar?: string;
+
+    @ApiProperty({
+        example: 'Apaixonado por música e tecnologia',
+        required: false,
+    })
+    @IsString()
+    @IsOptional()
+    @MaxLength(500)
+    bio?: string;
+
+    @ApiProperty({
+        example: '1995-06-15T00:00:00.000Z',
+        required: false,
+    })
+    @IsDate()
+    @IsOptional()
+    @Type(() => Date)
+    birthDate?: Date;
+
+    @ApiProperty({
+        example: 'M',
+        required: false,
+    })
+    @IsString()
+    @IsOptional()
+    gender?: string;
+
+    @ApiProperty({
+        example: 'profile-photos/uuid.jpg',
+        required: false,
+    })
+    @IsString()
+    @IsOptional()
+    profilePhoto?: string;
+
+    @ApiProperty({
+        example: ['MUSIC', 'TECH'],
+        required: false,
+        type: [String],
+    })
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    interests?: string[];
+
+    @ApiProperty({
+        example: -23.5505,
+        required: false,
+    })
+    @IsNumber()
+    @IsOptional()
+    latitude?: number;
+
+    @ApiProperty({
+        example: -46.6333,
+        required: false,
+    })
+    @IsNumber()
+    @IsOptional()
+    longitude?: number;
+
+    @ApiProperty({
+        example: false,
+        required: false,
+    })
+    @IsBoolean()
+    @IsOptional()
+    isOrganizer?: boolean;
 }

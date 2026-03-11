@@ -3,13 +3,15 @@ import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import { $Enums, User } from '@prisma/client';
 import { Exclude, Expose } from 'class-transformer';
 import {
+    IsArray,
+    IsBoolean,
     IsDate,
     IsEmail,
     IsEnum,
+    IsNumber,
     IsOptional,
     IsString,
     IsUUID,
-    IsBoolean,
 } from 'class-validator';
 
 export class UserResponseDto implements Partial<User> {
@@ -88,6 +90,82 @@ export class UserResponseDto implements Partial<User> {
     @Expose()
     @IsBoolean()
     isVerified: boolean;
+
+    @ApiProperty({
+        example: 'Apaixonado por música e tecnologia',
+        required: false,
+        nullable: true,
+    })
+    @Expose()
+    @IsString()
+    @IsOptional()
+    bio: string | null;
+
+    @ApiProperty({
+        example: '1995-06-15T00:00:00.000Z',
+        required: false,
+        nullable: true,
+    })
+    @Expose()
+    @IsDate()
+    @IsOptional()
+    birthDate: Date | null;
+
+    @ApiProperty({
+        example: 'M',
+        required: false,
+        nullable: true,
+    })
+    @Expose()
+    @IsString()
+    @IsOptional()
+    gender: string | null;
+
+    @ApiProperty({
+        example: 'profile-photos/uuid.jpg',
+        required: false,
+        nullable: true,
+    })
+    @Expose()
+    @IsString()
+    @IsOptional()
+    profilePhoto: string | null;
+
+    @ApiProperty({
+        example: ['MUSIC', 'TECH'],
+        type: [String],
+    })
+    @Expose()
+    @IsArray()
+    @IsString({ each: true })
+    interests: string[];
+
+    @ApiProperty({
+        example: -23.5505,
+        required: false,
+        nullable: true,
+    })
+    @Expose()
+    @IsNumber()
+    @IsOptional()
+    latitude: number | null;
+
+    @ApiProperty({
+        example: -46.6333,
+        required: false,
+        nullable: true,
+    })
+    @Expose()
+    @IsNumber()
+    @IsOptional()
+    longitude: number | null;
+
+    @ApiProperty({
+        example: false,
+    })
+    @Expose()
+    @IsBoolean()
+    isOrganizer: boolean;
 
     @ApiProperty({
         example: faker.date.past().toISOString(),
