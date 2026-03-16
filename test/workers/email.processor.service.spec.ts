@@ -52,7 +52,7 @@ describe('EmailProcessorWorkerService', () => {
         it('should process the welcome email job and call sendEmail', async () => {
             const jobData: ISendEmailBasePayload<IWelcomeEmailDataPaylaod> = {
                 toEmails: ['test@example.com'],
-                data: { userName: 'Test User' },
+                data: { firstName: 'Test User' },
             };
             const jobMock = { data: jobData } as Job<
                 ISendEmailBasePayload<IWelcomeEmailDataPaylaod>

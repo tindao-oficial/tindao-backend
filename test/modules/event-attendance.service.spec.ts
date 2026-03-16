@@ -263,7 +263,6 @@ describe('EventAttendanceService', () => {
             updatedAt: new Date(),
             user: {
                 id: USER_ID,
-                userName: 'joao',
                 firstName: 'João',
                 lastName: 'Silva',
                 profilePhoto: null,
@@ -447,7 +446,6 @@ describe('EventAttendanceService', () => {
                 endAt: new Date(),
                 organizer: {
                     id: 'org-id',
-                    userName: 'org',
                     firstName: null,
                     lastName: null,
                     profilePhoto: null,

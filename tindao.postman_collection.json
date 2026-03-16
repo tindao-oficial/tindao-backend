@@ -33,6 +33,17 @@
       "key": "inviteCode",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "googleIdToken",
+      "value": "",
+      "type": "string",
+      "description": "Google ID token from client-side Google Sign-In"
     }
   ],
   "item": [
@@ -63,6 +74,9 @@
                   "if (res.data && res.data.accessToken) {",
                   "  pm.collectionVariables.set('accessToken', res.data.accessToken);",
                   "  pm.collectionVariables.set('refreshToken', res.data.refreshToken);",
+                  "  if (res.data.user && res.data.user.id) {",
+                  "    pm.collectionVariables.set('userId', res.data.user.id);",
+                  "  }",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -80,7 +94,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!\",\n  \"userName\": \"joaosilva\",\n  \"firstName\": \"João\",\n  \"lastName\": \"Silva\"\n}"
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"João\",\n  \"lastName\": \"Silva\"\n}"
             }
           }
         },
@@ -95,6 +109,9 @@
                   "if (res.data && res.data.accessToken) {",
                   "  pm.collectionVariables.set('accessToken', res.data.accessToken);",
                   "  pm.collectionVariables.set('refreshToken', res.data.refreshToken);",
+                  "  if (res.data.user && res.data.user.id) {",
+                  "    pm.collectionVariables.set('userId', res.data.user.id);",
+                  "  }",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -155,6 +172,42 @@
                 "value": "Bearer {{accessToken}}"
               }
             ]
+          }
+        },
+        {
+          "name": "Google Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.data && res.data.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', res.data.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', res.data.refreshToken);",
+                  "  if (res.data.user && res.data.user.id) {",
+                  "    pm.collectionVariables.set('userId', res.data.user.id);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/auth/google",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"{{googleIdToken}}\"\n}"
+            },
+            "description": "Login or register via Google Sign-In. Send the idToken obtained from client-side Google Sign-In. Returns accessToken, refreshToken, expiresAt, and user profile."
           }
         }
       ]
@@ -315,6 +368,30 @@
                   "key": "cursor",
                   "value": "",
                   "disabled": true
+                },
+                {
+                  "key": "latitude",
+                  "value": "-23.5505",
+                  "disabled": true,
+                  "description": "User latitude for proximity search"
+                },
+                {
+                  "key": "longitude",
+                  "value": "-46.6333",
+                  "disabled": true,
+                  "description": "User longitude for proximity search"
+                },
+                {
+                  "key": "radius",
+                  "value": "50",
+                  "disabled": true,
+                  "description": "Search radius in km (default: 50)"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "distance",
+                  "disabled": true,
+                  "description": "Sort by distance when lat/lng provided"
                 }
               ]
             },

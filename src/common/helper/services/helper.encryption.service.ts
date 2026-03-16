@@ -58,7 +58,27 @@ export class HelperEncryptionService implements IHelperEncryptionService {
             this.createAccessToken(payload),
             this.createRefreshToken(payload),
         ]);
-        return { accessToken, refreshToken };
+        const expiresAt = this.computeExpiresAt(this.accessTokenExpire);
+        return { accessToken, refreshToken, expiresAt };
+    }
+
+    /**
+     * Converts a duration string like "1d", "15m", "2h" to an absolute
+     * epoch timestamp in milliseconds (Date.now() + duration).
+     */
+    private computeExpiresAt(exp: string): number {
+        const units: Record<string, number> = {
+            s: 1_000,
+            m: 60_000,
+            h: 3_600_000,
+            d: 86_400_000,
+        };
+        const match = exp.match(/^(\d+)([smhd])$/);
+        if (!match) {
+            // Fallback: 1 day
+            return Date.now() + 86_400_000;
+        }
+        return Date.now() + parseInt(match[1], 10) * units[match[2]];
     }
 
     public createAccessToken(payload: IAuthUser): Promise<string> {

@@ -35,7 +35,6 @@ const STATUS_STRENGTH: Record<$Enums.EventAttendanceStatus, number> = {
 
 const ATTENDEE_SELECT = {
     id: true,
-    userName: true,
     firstName: true,
     lastName: true,
     profilePhoto: true,

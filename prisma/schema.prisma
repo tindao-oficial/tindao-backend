@@ -12,9 +12,9 @@ datasource db {
 
 model User {
   id            String    @id @default(uuid())
-  userName      String    @unique
   email         String    @unique
-  password      String
+  password      String?
+  googleId      String?   @unique @map("google_id")
   firstName     String?   @map("first_name")
   lastName      String?   @map("last_name")
   isVerified    Boolean   @default(false) @map("is_verified")
@@ -130,6 +130,8 @@ enum EventCategory {
   FOOD
   NIGHTLIFE
   NETWORKING
+  UNIVERSITY
+  PARTY
   OTHER
 }
 

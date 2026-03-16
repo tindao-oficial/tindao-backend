@@ -59,8 +59,11 @@ src/
 - **All routes are protected by default** via global `JwtAccessGuard` registered in `RequestModule`
 - Use `@PublicRoute()` to bypass JWT (login, signup, health, and public listing endpoints)
 - Use `@Roles(Role.ADMIN)` for role-based access — imports Prisma-generated `Role` enum from `@prisma/client`
-- Access tokens: 15min | Refresh tokens: 7 days
-- Global guards also apply `ThrottlerGuard` (rate limiting: 15 req/15 min)
+- Access tokens: 1d | Refresh tokens: 7 days
+- All auth token responses include `expiresAt` (epoch ms) for client-side refresh scheduling
+- **Google Sign-In**: `POST /v1/auth/google` accepts `{ idToken }`, validates via `google-auth-library`, upserts user by email/googleId
+- User `password` is nullable — Google-only users have no password; email login checks and returns `auth.error.useGoogleLogin` if password is null
+- Global guards also apply `ThrottlerGuard` (rate limiting: 10 req/60s)
 
 ### API Response Pattern
 Every controller method must use `@DocResponse()`:

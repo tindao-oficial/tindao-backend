@@ -12,5 +12,5 @@ export interface ISendEmailBasePayload<T> {
 }
 
 export interface IWelcomeEmailDataPaylaod {
-    userName: string;
+    firstName: string;
 }

@@ -60,13 +60,6 @@ export class UserResponseDto implements Partial<User> {
     avatar: string | null;
 
     @ApiProperty({
-        example: faker.internet.username(),
-    })
-    @Expose()
-    @IsString()
-    userName: string;
-
-    @ApiProperty({
         example: faker.phone.number(),
         required: false,
         nullable: true,

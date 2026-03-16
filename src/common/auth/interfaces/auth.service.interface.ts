@@ -1,14 +1,16 @@
 import { IAuthUser } from 'src/common/request/interfaces/request.interface';
 
-import { UserLoginDto } from '../dtos/auth.login.dto';
+import { GoogleAuthDto } from '../dtos/request/auth.google.dto';
+import { UserLoginDto } from '../dtos/request/auth.login.dto';
 import {
     AuthRefreshResponseDto,
     AuthResponseDto,
 } from '../dtos/response/auth.response.dto';
-import { UserCreateDto } from '../dtos/auth.signup.dto';
+import { UserCreateDto } from '../dtos/request/auth.signup.dto';
 
 export interface IAuthService {
     login(data: UserLoginDto): Promise<AuthResponseDto>;
     signup(data: UserCreateDto): Promise<AuthResponseDto>;
+    googleLogin(data: GoogleAuthDto): Promise<AuthResponseDto>;
     refreshTokens(payload: IAuthUser): Promise<AuthRefreshResponseDto>;
 }

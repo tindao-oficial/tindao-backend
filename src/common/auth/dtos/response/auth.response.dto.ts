@@ -1,7 +1,12 @@
 import { faker } from '@faker-js/faker';
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose, Type } from 'class-transformer';
-import { IsNotEmpty, IsString, ValidateNested } from 'class-validator';
+import {
+    IsNotEmpty,
+    IsNumber,
+    IsString,
+    ValidateNested,
+} from 'class-validator';
 
 import { UserResponseDto } from 'src/modules/user/dtos/response/user.response';
 
@@ -23,6 +28,15 @@ export class TokenDto {
     @IsString()
     @IsNotEmpty()
     refreshToken: string;
+
+    @ApiProperty({
+        example: 1742234567890,
+        description:
+            'Access token expiration as epoch timestamp in milliseconds',
+    })
+    @Expose()
+    @IsNumber()
+    expiresAt: number;
 }
 
 export class AuthResponseDto extends TokenDto {

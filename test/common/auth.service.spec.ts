@@ -1,5 +1,6 @@
 import { getQueueToken } from '@nestjs/bull';
 import { HttpException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Role } from '@prisma/client';
 
@@ -24,6 +25,10 @@ describe('AuthService', () => {
         createJwtTokens: jest.fn(),
     };
 
+    const mockConfigService = {
+        get: jest.fn().mockReturnValue('test-google-client-id'),
+    };
+
     const mockEmailQueue = {
         add: jest.fn(),
     };
@@ -36,6 +41,10 @@ describe('AuthService', () => {
                 {
                     provide: HelperEncryptionService,
                     useValue: mockHelperEncryptionService,
+                },
+                {
+                    provide: ConfigService,
+                    useValue: mockConfigService,
                 },
                 {
                     provide: getQueueToken(APP_BULL_QUEUES.EMAIL),
@@ -87,6 +96,7 @@ describe('AuthService', () => {
             const mockTokens = {
                 accessToken: 'access_token',
                 refreshToken: 'refresh_token',
+                expiresAt: 1742234567890,
             };
 
             mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
@@ -120,12 +130,13 @@ describe('AuthService', () => {
             const newUser = {
                 id: '123',
                 email: 'new@example.com',
-                userName: 'newuser',
+                firstName: 'John',
                 role: Role.USER,
             };
             const tokens = {
                 accessToken: 'access_token',
                 refreshToken: 'refresh_token',
+                expiresAt: 1742234567890,
             };
 
             mockPrismaService.user.findUnique.mockResolvedValue(null);
@@ -154,6 +165,7 @@ describe('AuthService', () => {
             const tokens = {
                 accessToken: 'new_access_token',
                 refreshToken: 'new_refresh_token',
+                expiresAt: 1742234567890,
             };
 
             mockHelperEncryptionService.createJwtTokens.mockResolvedValue(

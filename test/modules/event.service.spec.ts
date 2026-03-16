@@ -145,6 +145,7 @@ describe('EventService', () => {
         service = module.get<EventService>(EventService);
         jest.clearAllMocks();
         mockConfig.get.mockReturnValue('http://localhost:3000');
+        mockDb.eventAttendance.groupBy.mockResolvedValue([]);
     });
 
     it('should be defined', () => {
@@ -162,14 +163,20 @@ describe('EventService', () => {
             ).rejects.toThrow(HttpException);
         });
 
-        it('should throw 403 if user is not an organizer', async () => {
+        it('should silently ignore isOfficial if user is not an organizer', async () => {
             mockDb.user.findUnique.mockResolvedValue(mockNonOrganizer);
+            mockDb.event.create.mockResolvedValue({
+                ...mockMainEvent,
+                organizerId: USER_ID,
+                isOfficial: false,
+            });
 
-            await expect(
-                service.createMainEvent(USER_ID, mockCreateEventDto)
-            ).rejects.toThrow(
-                expect.objectContaining({ status: HttpStatus.FORBIDDEN })
-            );
+            const result = await service.createMainEvent(USER_ID, {
+                ...mockCreateEventDto,
+                isOfficial: true,
+            });
+
+            expect(result.isOfficial).toBe(false);
         });
 
         it('should throw 400 if endAt is not after startAt', async () => {
@@ -516,7 +523,6 @@ describe('EventService', () => {
                 ...mockMainEvent,
                 organizer: {
                     id: ORGANIZER_ID,
-                    userName: 'organizer',
                     firstName: 'João',
                     lastName: 'Silva',
                     avatar: null,

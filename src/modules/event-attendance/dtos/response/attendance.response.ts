@@ -17,11 +17,6 @@ export class AttendeeUserResponseDto {
     @IsUUID()
     id: string;
 
-    @ApiProperty({ example: faker.internet.username() })
-    @Expose()
-    @IsString()
-    userName: string;
-
     @ApiProperty({
         example: faker.person.firstName(),
         required: false,

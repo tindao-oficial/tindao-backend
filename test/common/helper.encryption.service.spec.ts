@@ -109,6 +109,7 @@ describe('HelperEncryptionService', () => {
             expect(result).toEqual({
                 accessToken: 'mockAccessToken',
                 refreshToken: 'mockRefreshToken',
+                expiresAt: expect.any(Number),
             });
             expect(jwtServiceMock.signAsync).toHaveBeenCalledTimes(2);
         });
@@ -144,6 +145,7 @@ describe('HelperEncryptionService', () => {
             expect(result).toEqual({
                 accessToken: 'adminAccessToken',
                 refreshToken: 'adminRefreshToken',
+                expiresAt: expect.any(Number),
             });
         });
     });
@@ -564,6 +566,7 @@ describe('HelperEncryptionService', () => {
             expect(tokens).toEqual({
                 accessToken: 'accessToken',
                 refreshToken: 'refreshToken',
+                expiresAt: expect.any(Number),
             });
             expect(hash).toBe('hashedPassword');
             expect(isValid).toBe(true);

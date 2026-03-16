@@ -18,11 +18,6 @@ export class EventOrganizerResponseDto {
     @IsUUID()
     id: string;
 
-    @ApiProperty({ example: faker.internet.username() })
-    @Expose()
-    @IsString()
-    userName: string;
-
     @ApiProperty({
         example: faker.person.firstName(),
         required: false,
@@ -265,11 +260,47 @@ export class EventDetailResponseDto extends EventResponseDto {
     attendeesCount: number;
 }
 
-export class EventListResponseDto {
-    @ApiProperty({ type: [EventResponseDto] })
+export class EventListItemResponseDto extends EventResponseDto {
+    @ApiProperty({ type: EventOrganizerResponseDto })
     @Expose()
-    @Type(() => EventResponseDto)
-    items: EventResponseDto[];
+    @Type(() => EventOrganizerResponseDto)
+    organizer: EventOrganizerResponseDto;
+
+    @ApiProperty({
+        example: 42,
+        description: 'Number of users marked as INTERESTED',
+    })
+    @Expose()
+    @IsNumber()
+    interestedCount: number;
+
+    @ApiProperty({
+        example: 15,
+        description:
+            'Number of users actively participating (GOING + CHECKED_IN + ATTENDED)',
+    })
+    @Expose()
+    @IsNumber()
+    attendeesCount: number;
+
+    @ApiProperty({
+        example: 3.5,
+        required: false,
+        nullable: true,
+        description:
+            'Distance in km from the queried location (only when lat/lng provided)',
+    })
+    @Expose()
+    @IsNumber()
+    @IsOptional()
+    distance: number | null;
+}
+
+export class EventListResponseDto {
+    @ApiProperty({ type: [EventListItemResponseDto] })
+    @Expose()
+    @Type(() => EventListItemResponseDto)
+    items: EventListItemResponseDto[];
 
     @ApiProperty({ example: 'cursor-uuid', required: false, nullable: true })
     @Expose()

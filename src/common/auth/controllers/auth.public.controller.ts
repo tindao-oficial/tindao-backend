@@ -14,6 +14,7 @@ import { AuthUser } from 'src/common/request/decorators/request.user.decorator';
 import { JwtRefreshGuard } from 'src/common/request/guards/jwt.refresh.guard';
 import { IAuthUser } from 'src/common/request/interfaces/request.interface';
 
+import { GoogleAuthDto } from '../dtos/request/auth.google.dto';
 import { UserLoginDto } from '../dtos/request/auth.login.dto';
 import { UserCreateDto } from '../dtos/request/auth.signup.dto';
 import {
@@ -50,6 +51,19 @@ export class AuthPublicController {
     })
     public signup(@Body() payload: UserCreateDto): Promise<AuthResponseDto> {
         return this.authService.signup(payload);
+    }
+
+    @Post('google')
+    @PublicRoute()
+    @ApiOperation({ summary: 'Login or register via Google Sign-In' })
+    @DocResponse({
+        serialization: AuthResponseDto,
+        httpStatus: HttpStatus.OK,
+    })
+    public googleLogin(
+        @Body() payload: GoogleAuthDto
+    ): Promise<AuthResponseDto> {
+        return this.authService.googleLogin(payload);
     }
 
     @Get('refresh-token')

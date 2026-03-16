@@ -288,6 +288,26 @@ export class EventService implements IEventService {
 
     // ─── Event listing ────────────────────────────────────────────────────────
 
+    /**
+     * Haversine formula: compute distance between two coordinates in km.
+     */
+    private haversineKm(
+        lat1: number,
+        lon1: number,
+        lat2: number,
+        lon2: number
+    ): number {
+        const R = 6371;
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a =
+            Math.sin(dLat / 2) ** 2 +
+            Math.cos((lat1 * Math.PI) / 180) *
+                Math.cos((lat2 * Math.PI) / 180) *
+                Math.sin(dLon / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
     async listEvents(query: EventListDto): Promise<EventListResponseDto> {
         const limit = query.limit ?? 20;
         const type = query.type ?? $Enums.EventType.MAIN;
@@ -320,19 +340,28 @@ export class EventService implements IEventService {
             where.approvalStatus = $Enums.SubEventApprovalStatus.APPROVED;
         }
 
+        // Geo filtering: require events to have lat/lng when filtering by location
+        const hasGeo =
+            query.latitude !== undefined && query.longitude !== undefined;
+        if (hasGeo) {
+            where.latitude = { not: null };
+            where.longitude = { not: null };
+        }
+
         const events = await this.databaseService.event.findMany({
             where,
             orderBy: { startAt: 'asc' },
-            take: limit + 1,
-            ...(query.cursor && {
-                cursor: { id: query.cursor },
-                skip: 1,
-            }),
+            // Fetch more rows when geo-filtering so we can apply radius post-filter
+            take: hasGeo ? undefined : limit + 1,
+            ...(query.cursor &&
+                !hasGeo && {
+                    cursor: { id: query.cursor },
+                    skip: 1,
+                }),
             include: {
                 organizer: {
                     select: {
                         id: true,
-                        userName: true,
                         firstName: true,
                         lastName: true,
                         avatar: true,
@@ -341,15 +370,90 @@ export class EventService implements IEventService {
             },
         });
 
-        let nextCursor: string | null = null;
-        if (events.length > limit) {
-            events.pop();
-            nextCursor = events[events.length - 1].id;
+        // Fetch attendance counts for all retrieved events (avoids N+1)
+        const eventIds = events.map(e => e.id);
+        const countRows = await this.databaseService.eventAttendance.groupBy({
+            by: ['eventId', 'status'],
+            where: { eventId: { in: eventIds } },
+            _count: { _all: true },
+        });
+
+        const countMap = new Map<
+            string,
+            { interested: number; attendees: number }
+        >();
+        for (const row of countRows) {
+            if (!countMap.has(row.eventId)) {
+                countMap.set(row.eventId, { interested: 0, attendees: 0 });
+            }
+            const counts = countMap.get(row.eventId)!;
+            if (row.status === $Enums.EventAttendanceStatus.INTERESTED) {
+                counts.interested += row._count._all;
+            } else if (ELIGIBLE_ATTENDANCE_STATUSES.includes(row.status)) {
+                counts.attendees += row._count._all;
+            }
         }
 
-        const items = events.map(e => this.attachInviteUrl(e));
+        // Compute distance + radius filter when geo params are provided
+        const radius = query.radius ?? 50;
+        let enriched = events.map(e => {
+            const counts = countMap.get(e.id) ?? {
+                interested: 0,
+                attendees: 0,
+            };
+            const distance =
+                hasGeo && e.latitude != null && e.longitude != null
+                    ? this.haversineKm(
+                          query.latitude!,
+                          query.longitude!,
+                          e.latitude,
+                          e.longitude
+                      )
+                    : null;
+            return {
+                ...this.attachInviteUrl(e),
+                interestedCount: counts.interested,
+                attendeesCount: counts.attendees,
+                distance:
+                    distance !== null ? Math.round(distance * 10) / 10 : null,
+            };
+        });
 
-        return { items: items as any, nextCursor };
+        // Apply radius filter and optional distance sort
+        if (hasGeo) {
+            enriched = enriched.filter(
+                e => e.distance !== null && e.distance <= radius
+            );
+            if (query.sortBy === 'distance') {
+                enriched.sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
+            }
+        }
+
+        // Cursor-based pagination for geo queries (post-filter)
+        let paginatedItems = enriched;
+        if (hasGeo && query.cursor) {
+            const cursorIdx = enriched.findIndex(e => e.id === query.cursor);
+            paginatedItems =
+                cursorIdx >= 0 ? enriched.slice(cursorIdx + 1) : enriched;
+        }
+
+        let nextCursor: string | null = null;
+        if (hasGeo) {
+            if (paginatedItems.length > limit) {
+                paginatedItems = paginatedItems.slice(0, limit);
+                nextCursor = paginatedItems[paginatedItems.length - 1].id;
+            }
+        } else {
+            if (enriched.length > limit) {
+                enriched.pop();
+                paginatedItems = enriched;
+                nextCursor = paginatedItems[paginatedItems.length - 1].id;
+            } else {
+                paginatedItems = enriched;
+            }
+        }
+
+        return { items: paginatedItems as any, nextCursor };
     }
 
     // ─── Event detail ─────────────────────────────────────────────────────────
@@ -362,7 +466,6 @@ export class EventService implements IEventService {
                     organizer: {
                         select: {
                             id: true,
-                            userName: true,
                             firstName: true,
                             lastName: true,
                             avatar: true,
@@ -380,7 +483,6 @@ export class EventService implements IEventService {
                             organizer: {
                                 select: {
                                     id: true,
-                                    userName: true,
                                     firstName: true,
                                     lastName: true,
                                     avatar: true,
@@ -438,7 +540,6 @@ export class EventService implements IEventService {
                 organizer: {
                     select: {
                         id: true,
-                        userName: true,
                         firstName: true,
                         lastName: true,
                         avatar: true,
@@ -454,7 +555,6 @@ export class EventService implements IEventService {
                         organizer: {
                             select: {
                                 id: true,
-                                userName: true,
                                 firstName: true,
                                 lastName: true,
                                 avatar: true,

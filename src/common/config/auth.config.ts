@@ -11,5 +11,6 @@ export default registerAs(
             secret: process.env.AUTH_REFRESH_TOKEN_SECRET,
             tokenExp: process.env.AUTH_REFRESH_TOKEN_EXP,
         },
+        googleClientId: process.env.AUTH_GOOGLE_CLIENT_ID,
     })
 );

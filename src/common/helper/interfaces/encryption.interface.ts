@@ -8,4 +8,5 @@ export interface IEncryptDataPayload {
 export interface IAuthTokenResponse {
     accessToken: string;
     refreshToken: string;
+    expiresAt: number;
 }

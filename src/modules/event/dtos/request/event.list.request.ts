@@ -45,6 +45,47 @@ export class EventListDto {
     @IsOptional()
     organizerId?: string;
 
+    @ApiProperty({
+        example: -23.5505,
+        required: false,
+        description: 'User latitude for proximity search',
+    })
+    @IsNumber()
+    @Type(() => Number)
+    @IsOptional()
+    latitude?: number;
+
+    @ApiProperty({
+        example: -46.6333,
+        required: false,
+        description: 'User longitude for proximity search',
+    })
+    @IsNumber()
+    @Type(() => Number)
+    @IsOptional()
+    longitude?: number;
+
+    @ApiProperty({
+        example: 50,
+        required: false,
+        description: 'Search radius in km (default: 50)',
+    })
+    @IsNumber()
+    @Min(1)
+    @Max(500)
+    @Type(() => Number)
+    @IsOptional()
+    radius?: number;
+
+    @ApiProperty({
+        example: 'distance',
+        required: false,
+        description: 'Sort by "distance" when lat/lng provided',
+    })
+    @IsString()
+    @IsOptional()
+    sortBy?: string;
+
     @ApiProperty({ example: 20, required: false, default: 20 })
     @IsNumber()
     @Min(1)

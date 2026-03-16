@@ -18,7 +18,8 @@ Este documento descreve todas as funcionalidades disponíveis na API do Tindão,
 10. [Listagens Públicas](#10-listagens-públicas)
 11. [Regras de Status de Presença](#11-regras-de-status-de-presença)
 12. [Permissões Resumidas](#12-permissões-resumidas)
-13. [O que vem a seguir (roadmap)](#13-o-que-vem-a-seguir-roadmap)
+13. [Categorias de Evento](#13-categorias-de-evento)
+14. [O que vem a seguir (roadmap)](#14-o-que-vem-a-seguir-roadmap)
 
 ---
 
@@ -30,7 +31,7 @@ Este documento descreve todas as funcionalidades disponíveis na API do Tindão,
 POST /v1/auth/signup
 ```
 
-Qualquer pessoa pode criar uma conta. Campos obrigatórios: `email`, `userName`, `password`.
+Qualquer pessoa pode criar uma conta. Campos obrigatórios: `email`, `password`.
 
 ### Login
 
@@ -38,17 +39,36 @@ Qualquer pessoa pode criar uma conta. Campos obrigatórios: `email`, `userName`,
 POST /v1/auth/login
 ```
 
-Retorna dois tokens:
-- **`accessToken`** — válido por 15 minutos. Deve ser enviado no header `Authorization: Bearer <token>` em todas as rotas autenticadas.
+Retorna três valores principais:
+- **`accessToken`** — válido por 1 dia. Deve ser enviado no header `Authorization: Bearer <token>` em todas as rotas autenticadas.
 - **`refreshToken`** — válido por 7 dias. Usado para renovar o access token sem novo login.
+- **`expiresAt`** — timestamp em milissegundos (epoch) indicando quando o access token expira. O app usa esse campo para agendar o refresh automático.
+
+### Login via Google
+
+```
+POST /v1/auth/google
+```
+
+Rota pública. Recebe o `idToken` obtido pelo Google Sign-In no app:
+
+```json
+{ "idToken": "eyJhbGciOiJSUzI1NiIs..." }
+```
+
+O backend valida o token com `google-auth-library` usando o `AUTH_GOOGLE_CLIENT_ID` configurado. Se o usuário não existe, cria uma nova conta com os dados do perfil Google (nome, foto, email). Se já existe (por email ou googleId), atualiza dados faltantes e retorna o perfil.
+
+Retorna o mesmo formato de login/signup: `accessToken`, `refreshToken`, `expiresAt`, `user`.
+
+> **Nota:** Usuários criados exclusivamente via Google não possuem senha. Se tentarem login por email/senha, recebem `400` com `auth.error.useGoogleLogin`.
 
 ### Renovar o token
 
 ```
-POST /v1/auth/refresh
+GET /v1/auth/refresh-token
 ```
 
-Envie o `refreshToken` para receber um novo `accessToken`.
+Envie o `refreshToken` no header `Authorization: Bearer <refreshToken>`. Retorna novos `accessToken`, `refreshToken` e `expiresAt`.
 
 ### Logout
 
@@ -515,8 +535,20 @@ Rota pública. Por padrão retorna apenas eventos do tipo `MAIN` com `status = P
 | `startDate` | datetime | Eventos que começam a partir desta data |
 | `endDate` | datetime | Eventos que começam até esta data |
 | `organizerId` | uuid | Filtrar por organizador específico |
+| `latitude` | number | Latitude do usuário (para busca por proximidade) |
+| `longitude` | number | Longitude do usuário (para busca por proximidade) |
+| `radius` | number | Raio de busca em km (padrão: 50) |
+| `sortBy` | string | `"distance"` para ordenar por proximidade |
 | `limit` | number | Máximo de itens (padrão: 20, máximo: 100) |
 | `cursor` | string | Cursor para próxima página |
+
+Cada item retorna:
+- `organizer` — dados resumidos do organizador (id, firstName, lastName, avatar)
+- `interestedCount` — total de usuários com status INTERESTED
+- `attendeesCount` — total de usuários com status GOING + CHECKED_IN + ATTENDED
+- `distance` — distância em km do ponto informado (apenas quando `latitude`/`longitude` são passados, `null` caso contrário)
+
+**Busca por proximidade:** quando `latitude` e `longitude` são fornecidos, apenas eventos com coordenadas dentro do raio são retornados. Se `sortBy=distance`, os resultados são ordenados do mais perto ao mais longe. A distância é calculada via fórmula de Haversine.
 
 **Regras de visibilidade:**
 - Eventos privados (`isPrivate = true`) não aparecem nesta listagem
@@ -599,7 +631,26 @@ CANCELLED (0) < INTERESTED (1) < GOING (2) < CHECKED_IN (3) < ATTENDED (4)
 
 ---
 
-## 13. O que vem a seguir (roadmap)
+## 13. Categorias de Evento
+
+O enum `EventCategory` inclui:
+
+| Valor | Descrição |
+|-------|-----------|
+| `MUSIC` | Eventos musicais |
+| `SPORTS` | Esportes |
+| `TECH` | Tecnologia |
+| `ARTS` | Artes |
+| `FOOD` | Gastronomia |
+| `NIGHTLIFE` | Baladas / vida noturna |
+| `NETWORKING` | Networking |
+| `UNIVERSITY` | Eventos universitários |
+| `PARTY` | Festas / agitos |
+| `OTHER` | Outros |
+
+---
+
+## 14. O que vem a seguir (roadmap)
 
 ### Módulo de Ingressos (Tickets)
 - Compra de ingressos com integração de pagamento (PIX / cartão de crédito)
