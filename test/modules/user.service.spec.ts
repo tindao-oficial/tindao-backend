@@ -1,5 +1,6 @@
 import { HttpException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Role } from '@prisma/client';
 
 import { DatabaseService } from 'src/common/database/services/database.service';
 import { UserUpdateDto } from 'src/modules/user/dtos/request/user.update.request';
@@ -12,6 +13,9 @@ describe('UserService', () => {
         user: {
             findUnique: jest.fn(),
             update: jest.fn(),
+        },
+        event: {
+            updateMany: jest.fn(),
         },
     };
 
@@ -68,6 +72,7 @@ describe('UserService', () => {
             const mockUser = { id: '123', firstName: 'John', lastName: 'Doe' };
 
             mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+            mockPrismaService.event.updateMany.mockResolvedValue({ count: 0 });
             mockPrismaService.user.update.mockResolvedValue({
                 ...mockUser,
                 deletedAt: new Date(),
@@ -79,6 +84,55 @@ describe('UserService', () => {
                 success: true,
                 message: 'user.success.userDeleted',
             });
+        });
+
+        it('should cancel active events before soft deleting', async () => {
+            const mockUser = { id: '123', firstName: 'John', lastName: 'Doe' };
+
+            mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+            mockPrismaService.event.updateMany.mockResolvedValue({ count: 2 });
+            mockPrismaService.user.update.mockResolvedValue({
+                ...mockUser,
+                deletedAt: new Date(),
+            });
+
+            await service.deleteUser('123');
+
+            expect(mockPrismaService.event.updateMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({ organizerId: '123' }),
+                    data: expect.objectContaining({ status: 'CANCELLED' }),
+                })
+            );
+        });
+    });
+
+    describe('updateRole', () => {
+        it('should throw an error if user is not found', async () => {
+            mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+            await expect(
+                service.updateRole('non-existent-id', { role: Role.ADMIN })
+            ).rejects.toThrow(HttpException);
+        });
+
+        it('should update and return user with new role', async () => {
+            const mockUser = { id: '123', role: Role.USER, deletedAt: null };
+            mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+            mockPrismaService.user.update.mockResolvedValue({
+                ...mockUser,
+                role: Role.ADMIN,
+            });
+
+            const result = await service.updateRole('123', {
+                role: Role.ADMIN,
+            });
+
+            expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+                where: { id: '123' },
+                data: { role: Role.ADMIN },
+            });
+            expect(result.role).toBe(Role.ADMIN);
         });
     });
 

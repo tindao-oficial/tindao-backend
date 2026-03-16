@@ -3,7 +3,6 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
     IsArray,
-    IsBoolean,
     IsDate,
     IsEmail,
     IsNumber,
@@ -112,12 +111,4 @@ export class UserUpdateDto {
     @IsNumber()
     @IsOptional()
     longitude?: number;
-
-    @ApiProperty({
-        example: false,
-        required: false,
-    })
-    @IsBoolean()
-    @IsOptional()
-    isOrganizer?: boolean;
 }

@@ -47,5 +47,7 @@ export default registerAs('app', (): Record<string, any> => {
 
         debug: process.env.APP_DEBUG === 'true',
         logLevel: process.env.APP_LOG_LEVEL ?? 'info',
+
+        frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:3000',
     };
 });

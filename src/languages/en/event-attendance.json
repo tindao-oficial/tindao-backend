@@ -1,0 +1,16 @@
+{
+    "success": {
+        "interested": "Marked as interested in event",
+        "going": "Attendance confirmed",
+        "cancelled": "Attendance cancelled",
+        "attendees": "Attendee list retrieved successfully",
+        "interestedList": "Interested list retrieved successfully",
+        "myEvents": "Event history retrieved successfully",
+        "myAttendance": "Attendance status retrieved successfully"
+    },
+    "error": {
+        "eventNotFound": "Event not found",
+        "eventCancelled": "Cannot attend a cancelled event",
+        "notFound": "Attendance record not found"
+    }
+}

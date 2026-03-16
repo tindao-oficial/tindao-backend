@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import { $Enums, User } from '@prisma/client';
-import { Exclude, Expose } from 'class-transformer';
+import { Exclude, Expose, Type } from 'class-transformer';
 import {
     IsArray,
     IsBoolean,
@@ -199,3 +199,16 @@ export class UserResponseDto implements Partial<User> {
 export class UserGetProfileResponseDto extends UserResponseDto {}
 
 export class UserUpdateProfileResponseDto extends UserResponseDto {}
+
+export class UserListResponseDto {
+    @ApiProperty({ type: [UserResponseDto] })
+    @Expose()
+    @Type(() => UserResponseDto)
+    items: UserResponseDto[];
+
+    @ApiProperty({ example: 'cursor-uuid', required: false, nullable: true })
+    @Expose()
+    @IsString()
+    @IsOptional()
+    nextCursor: string | null;
+}

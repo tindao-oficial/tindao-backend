@@ -3,7 +3,8 @@
         "profile": "User details retrieved successfully",
         "deleted": "User deleted successfully",
         "updated": "User updated successfully",
-        "userDeleted": "User deleted successfully"
+        "userDeleted": "User deleted successfully",
+        "list": "Users retrieved successfully"
     },
     "error": {
         "notFound": "User not found in database",

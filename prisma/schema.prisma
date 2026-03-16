@@ -33,7 +33,87 @@ model User {
   updatedAt     DateTime  @updatedAt @map("updated_at")
   deletedAt     DateTime? @map("deleted_at")
 
+  events        Event[]            @relation("EventOrganizer")
+  attendances   EventAttendance[]
+
   @@map("users")
+}
+
+model Event {
+  id          String        @id @default(uuid())
+  title       String
+  description String
+  type        EventType
+  category    EventCategory
+  status      EventStatus   @default(DRAFT)
+  coverImage  String?       @map("cover_image")
+  city        String
+  venueName   String        @map("venue_name")
+  address     String
+  latitude    Float?
+  longitude   Float?
+  startAt     DateTime      @map("start_at")
+  endAt       DateTime      @map("end_at")
+
+  organizerId String        @map("organizer_id")
+  organizer   User          @relation("EventOrganizer", fields: [organizerId], references: [id])
+
+  // Hierarchy: sub-events point to their immediate parent and root main event
+  parentEventId String?     @map("parent_event_id")
+  parentEvent   Event?      @relation("EventParent", fields: [parentEventId], references: [id])
+  childEvents   Event[]     @relation("EventParent")
+
+  rootEventId   String?     @map("root_event_id")
+  rootEvent     Event?      @relation("EventRoot", fields: [rootEventId], references: [id])
+  rootChildren  Event[]     @relation("EventRoot")
+
+  // Controls who can create sub-events (only meaningful on MAIN events)
+  prePartyPermissionMode   SubEventPermissionMode @default(ORGANIZER_ONLY) @map("pre_party_permission_mode")
+  afterPartyPermissionMode SubEventPermissionMode @default(ORGANIZER_ONLY) @map("after_party_permission_mode")
+
+  // Visibility and invite
+  isPrivate  Boolean @default(false) @map("is_private")
+  isOfficial Boolean @default(false) @map("is_official")
+  inviteCode String  @unique @map("invite_code")
+
+  // Approval flow: only set for sub-events created by attendees (ATTENDEES_ALLOWED mode)
+  approvalStatus SubEventApprovalStatus? @map("approval_status")
+
+  attendances   EventAttendance[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([organizerId])
+  @@index([city])
+  @@index([startAt])
+  @@index([type])
+  @@index([parentEventId])
+  @@index([rootEventId])
+  @@index([approvalStatus])
+  @@map("events")
+}
+
+model EventAttendance {
+  id      String                @id @default(uuid())
+  eventId String                @map("event_id")
+  userId  String                @map("user_id")
+  status  EventAttendanceStatus
+  source  EventAttendanceSource @default(MANUAL)
+
+  event Event @relation(fields: [eventId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("event_attendances")
 }
 
 enum Role {
@@ -77,4 +157,37 @@ enum PaymentMethod {
   PIX
   CREDIT_CARD
   FREE
+}
+
+enum EventType {
+  MAIN
+  PRE_PARTY
+  AFTER_PARTY
+}
+
+enum SubEventPermissionMode {
+  DISABLED
+  ORGANIZER_ONLY
+  ATTENDEES_ALLOWED
+}
+
+enum EventAttendanceStatus {
+  INTERESTED
+  GOING
+  CHECKED_IN
+  ATTENDED
+  CANCELLED
+}
+
+enum EventAttendanceSource {
+  MANUAL
+  TICKET
+  ORGANIZER
+  SYSTEM
+}
+
+enum SubEventApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

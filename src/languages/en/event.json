@@ -1,0 +1,34 @@
+{
+    "success": {
+        "created": "Event created successfully",
+        "updated": "Event updated successfully",
+        "cancelled": "Event cancelled successfully",
+        "published": "Event published successfully",
+        "list": "Events retrieved successfully",
+        "detail": "Event details retrieved successfully",
+        "subEventCreated": "Sub-event created successfully",
+        "subEventRequested": "Sub-event request submitted, awaiting organizer approval",
+        "approved": "Sub-event approved successfully",
+        "rejected": "Sub-event rejected",
+        "pendingSubEvents": "Pending sub-event requests retrieved",
+        "invite": "Invite info retrieved successfully",
+        "organizedList": "Organized events retrieved successfully",
+        "userContext": "Event context retrieved successfully",
+        "deleted": "Event deleted successfully"
+    },
+    "error": {
+        "notFound": "Event not found",
+        "notOrganizer": "Only organizers can create main events",
+        "notEventOrganizer": "Only the event organizer can perform this action",
+        "notMainEvent": "Parent event must be a main event",
+        "notDraft": "Only draft events can be published",
+        "subEventDisabled": "Sub-events of this type are disabled for this event",
+        "subEventPermissionDenied": "You do not have permission to create this type of sub-event",
+        "notEligibleAttendee": "You must be going to the event to create a sub-event",
+        "alreadyCreatedSubEvent": "You already have a pending or approved sub-event of this type for this event",
+        "subEventNotPending": "This sub-event is not awaiting approval",
+        "invalidDates": "End date must be after start date",
+        "prePartyMustEndBeforeMainEvent": "Pre-party must end before the main event starts",
+        "afterPartyMustStartAfterMainEvent": "After-party must start after the main event ends"
+    }
+}
