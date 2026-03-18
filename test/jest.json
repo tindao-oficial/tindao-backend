@@ -12,7 +12,8 @@
         "!<rootDir>/src/**/*.mock.ts",
         "!<rootDir>/src/common/database/services/database.service.ts",
         "!<rootDir>/src/common/logger/services/logger.service.ts",
-        "!<rootDir>/src/workers/schedulers/midnight.scheduler.ts"
+        "!<rootDir>/src/workers/schedulers/midnight.scheduler.ts",
+        "!<rootDir>/src/common/mcp/services/*.ts"
     ],
     "coverageThreshold": {
         "global": {

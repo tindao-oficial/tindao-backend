@@ -26,7 +26,7 @@ O projeto usa **testes unitários** com Jest + SWC (compilação rápida, sem `t
 
 Todos os testes ficam em `test/` e seguem a mesma estrutura de `src/`.
 
-**Estado atual:** 16 suites, ~308 testes. Alguns métodos novos ainda precisam de cobertura (ver seção 6).
+**Estado atual:** 17 suites, ~308 testes. Alguns métodos novos ainda precisam de cobertura (ver seção 6).
 
 ---
 
@@ -100,6 +100,7 @@ test/
 ├── modules/
 │   ├── event.service.spec.ts          # Testes de EventService
 │   ├── event-attendance.service.spec.ts
+│   ├── event-favorite.service.spec.ts # Testes de EventFavoriteService (pendente)
 │   └── user.service.spec.ts
 └── workers/
     └── email.processor.service.spec.ts
@@ -251,7 +252,7 @@ const mockConfig = {
 | `createMainEvent` | Usuário não encontrado, datas inválidas, sucesso com inviteUrl, `isOfficial` ignorado para não-organizador, `isOfficial` aplicado para organizador |
 | `createSubEvent` | Tipo MAIN rejeitado, parent não encontrado, parent não é MAIN, evento cancelado, DISABLED, ORGANIZER_ONLY sem permissão, ATTENDEES_ALLOWED sem elegibilidade, datas inválidas, PENDING para participantes, APPROVED para organizador |
 | `listEvents` | Lista com inviteUrl, nextCursor, filtro APPROVED para sub-eventos, sem filtro para MAIN |
-| `getEventById` | Não encontrado, retorno com contagens e sub-eventos agrupados |
+| `getEventById` | Não encontrado, retorno com favoritesCount, attendeesCount e sub-eventos agrupados |
 | `updateEvent` | Não encontrado, não é organizador, admin pode atualizar, datas inválidas, sucesso |
 | `cancelEvent` | Não encontrado, não é organizador, admin pode cancelar, cascata de sub-eventos |
 | `publishEvent` | Não encontrado, não é organizador, admin pode publicar, não é DRAFT, sucesso |
@@ -267,13 +268,22 @@ const mockConfig = {
 
 | Método | Cenários testados |
 |--------|------------------|
-| `markInterested` | Evento não encontrado, evento cancelado, cria INTERESTED, não rebaixa de GOING, promove de CANCELLED |
-| `markGoing` | Evento cancelado, cria GOING, promove de INTERESTED, não rebaixa de CHECKED_IN, não rebaixa de ATTENDED |
+| `markGoing` | Evento cancelado, cria GOING, promove de CANCELLED, não rebaixa de CHECKED_IN, não rebaixa de ATTENDED |
 | `cancelAttendance` | Sem registro retorna null, cancela de GOING, cancela de ATTENDED |
 | `listEventAttendees` | Statuses padrão, filtro por status, nextCursor |
 | `getMyAttendanceForEvent` | Sem registro (exists: false), com registro (exists: true, status, source) |
-| `isEligibleAttendee` | Sem registro: false, INTERESTED: false, CANCELLED: false, GOING: true, CHECKED_IN: true, ATTENDED: true |
+| `isEligibleAttendee` | Sem registro: false, CANCELLED: false, GOING: true, CHECKED_IN: true, ATTENDED: true |
 | `listMyEvents` | Retorno correto, filtro upcoming, filtro past, nextCursor |
+
+### EventFavoriteService (`test/modules/event-favorite.service.spec.ts`) — pendente
+
+| Método | Cenários a cobrir |
+|--------|------------------|
+| `favoriteEvent` | Evento não encontrado, evento não publicado, já favoritado (409), sucesso |
+| `unfavoriteEvent` | Não estava favoritado (404), sucesso |
+| `getFavoriteEvents` | Lista vazia, lista com itens, contagens corretas, nextCursor |
+
+---
 
 ### UserService (`test/modules/user.service.spec.ts`)
 

@@ -11,15 +11,16 @@ Este documento descreve todas as funcionalidades disponíveis na API do Tindão,
 3. [Administração de Usuários](#3-administração-de-usuários)
 4. [Eventos Principais](#4-eventos-principais)
 5. [Sub-eventos (Pre-party / After-party)](#5-sub-eventos-pre-party--after-party)
-6. [Presença e Interesse](#6-presença-e-interesse)
-7. [Convites e QR Code](#7-convites-e-qr-code)
-8. [Fluxo de Aprovação de Sub-eventos](#8-fluxo-de-aprovação-de-sub-eventos)
-9. [Visão do Organizador](#9-visão-do-organizador)
-10. [Listagens Públicas](#10-listagens-públicas)
-11. [Regras de Status de Presença](#11-regras-de-status-de-presença)
-12. [Permissões Resumidas](#12-permissões-resumidas)
-13. [Categorias de Evento](#13-categorias-de-evento)
-14. [O que vem a seguir (roadmap)](#14-o-que-vem-a-seguir-roadmap)
+6. [Presença](#6-presença)
+7. [Favoritos](#7-favoritos)
+8. [Convites e QR Code](#8-convites-e-qr-code)
+9. [Fluxo de Aprovação de Sub-eventos](#9-fluxo-de-aprovação-de-sub-eventos)
+10. [Visão do Organizador](#10-visão-do-organizador)
+11. [Listagens Públicas](#11-listagens-públicas)
+12. [Regras de Status de Presença](#12-regras-de-status-de-presença)
+13. [Permissões Resumidas](#13-permissões-resumidas)
+14. [Categorias de Evento](#14-categorias-de-evento)
+15. [O que vem a seguir (roadmap)](#15-o-que-vem-a-seguir-roadmap)
 
 ---
 
@@ -323,15 +324,7 @@ Soft delete. Permitido para:
 
 ---
 
-## 6. Presença e Interesse
-
-### Marcar interesse
-
-```
-POST /v1/events/:eventId/interest
-```
-
-Indica que o usuário tem interesse no evento, mas não confirmou presença. Status: `INTERESTED`.
+## 6. Presença
 
 ### Confirmar presença
 
@@ -386,7 +379,66 @@ Retorna todos os eventos em que o usuário logado tem algum registro de presenç
 
 ---
 
-## 7. Convites e QR Code
+## 7. Favoritos
+
+Favoritar é uma ação independente do status de presença — análoga ao "salvar" do Instagram ou o "curtir" do Spotify. Um usuário pode ser `GOING` em um evento e tê-lo favoritado ao mesmo tempo, sem conflito.
+
+> **Importante:** Favoritos **não afetam** `attendanceStatus` em hipótese alguma. São sistemas completamente separados.
+
+### Favoritar um evento
+
+```
+POST /v1/events/:eventId/favorite
+```
+
+**Requer:** usuário autenticado. O evento deve existir e estar `PUBLISHED`. Retorna 409 se já favoritado.
+
+```json
+{ "isFavorited": true }
+```
+
+### Desfavoritar um evento
+
+```
+DELETE /v1/events/:eventId/favorite
+```
+
+**Requer:** usuário autenticado. Retorna 404 se o evento não estava favoritado.
+
+```json
+{ "isFavorited": false }
+```
+
+### Listar eventos favoritados
+
+```
+GET /v1/events/favorites
+```
+
+**Requer:** usuário autenticado. Retorna os eventos favoritados pelo usuário logado, no mesmo formato paginado de `GET /v1/events` (cursor-based).
+
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| `limit` | number | Máximo de itens (padrão: 20, máximo: 100) |
+| `cursor` | string | Cursor para próxima página (ID do registro de favorito) |
+
+Os itens retornam `isFavorited: true` sempre (são todos favoritados por definição).
+
+### Campo `isFavorited` nas respostas de evento
+
+O campo `isFavorited` aparece em todos os responses de evento:
+
+| Endpoint | Valor de `isFavorited` |
+|----------|----------------------|
+| `GET /v1/events` (público) | `null` — sem contexto de usuário |
+| `GET /v1/events/:id` (público) | `null` — sem contexto de usuário |
+| `GET /v1/events/invite/:code` (público) | `null` — sem contexto de usuário |
+| `GET /v1/events/:id/my-context` | `true` ou `false` — valor real do usuário autenticado |
+| `GET /v1/events/favorites` | `true` — sempre (são os favoritos) |
+
+---
+
+## 8. Convites e QR Code
 
 ### Como funcionam os convites
 
@@ -426,7 +478,7 @@ Rota pública. Retorna os detalhes completos do evento — útil para o fluxo de
 
 ---
 
-## 8. Fluxo de Aprovação de Sub-eventos
+## 9. Fluxo de Aprovação de Sub-eventos
 
 Quando o modo `ATTENDEES_ALLOWED` está ativo, participantes podem propor sub-eventos, mas eles precisam ser aprovados pelo organizador antes de aparecerem publicamente.
 
@@ -472,7 +524,7 @@ PATCH /v1/events/:eventId/sub-events/:subEventId/reject
 
 ---
 
-## 9. Visão do Organizador
+## 10. Visão do Organizador
 
 ### Contexto do usuário em um evento
 
@@ -489,7 +541,8 @@ Retorna flags booleanas para o frontend saber quais ações mostrar:
   "canCreatePreParty": true,
   "canCreateAfterParty": true,
   "canManageEvent": true,
-  "canApproveSubEvents": true
+  "canApproveSubEvents": true,
+  "isFavorited": false
 }
 ```
 
@@ -503,7 +556,7 @@ Retorna todos os eventos criados pelo usuário logado, com contagens de engajame
 
 | Campo | Descrição |
 |-------|-----------|
-| `interestedCount` | Quantidade de usuários com status INTERESTED |
+| `favoritesCount` | Quantidade de usuários que favoritaram o evento |
 | `attendeesCount` | Quantidade de usuários com status GOING + CHECKED_IN + ATTENDED |
 
 Suporta filtros:
@@ -517,7 +570,7 @@ Suporta filtros:
 
 ---
 
-## 10. Listagens Públicas
+## 11. Listagens Públicas
 
 ### Listar eventos
 
@@ -544,8 +597,9 @@ Rota pública. Por padrão retorna apenas eventos do tipo `MAIN` com `status = P
 
 Cada item retorna:
 - `organizer` — dados resumidos do organizador (id, firstName, lastName, avatar)
-- `interestedCount` — total de usuários com status INTERESTED
+- `favoritesCount` — total de usuários que favoritaram o evento
 - `attendeesCount` — total de usuários com status GOING + CHECKED_IN + ATTENDED
+- `isFavorited` — `null` (rotas públicas sem contexto de usuário)
 - `distance` — distância em km do ponto informado (apenas quando `latitude`/`longitude` são passados, `null` caso contrário)
 
 **Busca por proximidade:** quando `latitude` e `longitude` são fornecidos, apenas eventos com coordenadas dentro do raio são retornados. Se `sortBy=distance`, os resultados são ordenados do mais perto ao mais longe. A distância é calculada via fórmula de Haversine.
@@ -565,7 +619,7 @@ Rota pública. Retorna o evento com:
 - Dados completos do evento (incluindo `isOfficial`)
 - Informações do organizador
 - Sub-eventos agrupados: `preParties[]` e `afterParties[]` (apenas `APPROVED`), cada um com dados do seu organizador
-- Contagens: `interestedCount` e `attendeesCount`
+- Contagens: `favoritesCount` e `attendeesCount`
 
 ### Listar participantes
 
@@ -575,37 +629,28 @@ GET /v1/events/:eventId/attendees
 
 Retorna usuários com status `GOING`, `CHECKED_IN` ou `ATTENDED`. Suporta filtro por `status` e paginação por cursor.
 
-### Listar interessados
-
-```
-GET /v1/events/:eventId/interested
-```
-
-Retorna usuários com status `INTERESTED`.
-
 ---
 
-## 11. Regras de Status de Presença
+## 12. Regras de Status de Presença
 
 Os status de presença seguem uma hierarquia de força. Ações nunca rebaixam um status mais forte:
 
 ```
-CANCELLED (0) < INTERESTED (1) < GOING (2) < CHECKED_IN (3) < ATTENDED (4)
+CANCELLED (0) < GOING (1) < CHECKED_IN (2) < ATTENDED (3)
 ```
 
 | Ação | Comportamento |
 |------|---------------|
-| `markInterested` | Cria `INTERESTED`. Se o usuário já tem `GOING` ou superior, não faz nada. |
 | `markGoing` | Cria ou promove para `GOING`. Se o usuário já tem `CHECKED_IN` ou `ATTENDED`, não faz nada. |
 | `cancelAttendance` | Sempre define `CANCELLED`, independente do status atual. |
 
 **Statuses elegíveis para criar sub-eventos:** `GOING`, `CHECKED_IN`, `ATTENDED`
 
-**Status NÃO elegível:** `INTERESTED` — apenas demonstrar interesse não concede direitos de criação.
+> Para demonstrar interesse sem comprometer presença, use **Favoritar** (`POST /v1/events/:eventId/favorite`).
 
 ---
 
-## 12. Permissões Resumidas
+## 13. Permissões Resumidas
 
 | Ação | Quem pode |
 |------|-----------|
@@ -620,7 +665,8 @@ CANCELLED (0) < INTERESTED (1) < GOING (2) < CHECKED_IN (3) < ATTENDED (4)
 | Deletar sub-evento | Criador do sub-evento, organizador do evento pai, ou admin |
 | Aprovar/Rejeitar sub-evento | Somente o criador do evento pai |
 | Ver sub-eventos pendentes | Somente o criador do evento pai |
-| Marcar interesse/presença | Qualquer usuário autenticado |
+| Favoritar/desfavoritar evento | Qualquer usuário autenticado |
+| Confirmar presença (GOING) | Qualquer usuário autenticado |
 | Promover organizador | Apenas admin |
 | Alterar role de usuário | Apenas admin  |
 | Listar usuários | Apenas admin |
@@ -631,7 +677,7 @@ CANCELLED (0) < INTERESTED (1) < GOING (2) < CHECKED_IN (3) < ATTENDED (4)
 
 ---
 
-## 13. Categorias de Evento
+## 14. Categorias de Evento
 
 O enum `EventCategory` inclui:
 
@@ -650,7 +696,7 @@ O enum `EventCategory` inclui:
 
 ---
 
-## 14. O que vem a seguir (roadmap)
+## 15. O que vem a seguir (roadmap)
 
 ### Módulo de Ingressos (Tickets)
 - Compra de ingressos com integração de pagamento (PIX / cartão de crédito)

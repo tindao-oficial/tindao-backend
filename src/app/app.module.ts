@@ -3,6 +3,7 @@ import { TerminusModule } from '@nestjs/terminus';
 
 import { CommonModule } from 'src/common/common.module';
 import { EventAttendanceModule } from 'src/modules/event-attendance/event-attendance.module';
+import { EventFavoriteModule } from 'src/modules/event-favorite/event-favorite.module';
 import { EventModule } from 'src/modules/event/event.module';
 import { UserModule } from 'src/modules/user/user.module';
 import { WorkerModule } from 'src/workers/worker.module';
@@ -25,6 +26,7 @@ import { HealthController } from './controllers/health.controller';
 
         // Feature Modules
         UserModule,
+        EventFavoriteModule, // must be before EventModule (GET /events/favorites before GET /events/:id)
         EventModule,
         EventAttendanceModule,
     ],

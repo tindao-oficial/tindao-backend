@@ -10,11 +10,6 @@ import {
 } from '../dtos/response/attendance.response';
 
 export interface IEventAttendanceService {
-    markInterested(
-        userId: string,
-        eventId: string
-    ): Promise<EventAttendanceResponseDto>;
-
     markGoing(
         userId: string,
         eventId: string
@@ -50,7 +45,7 @@ export interface IEventAttendanceService {
 
 /**
  * Statuses that grant attendance-based privileges (e.g. sub-event creation).
- * INTERESTED alone is NOT sufficient — user must have confirmed participation.
+ * User must have confirmed participation (GOING, CHECKED_IN or ATTENDED).
  */
 export const ELIGIBLE_ATTENDANCE_STATUSES: $Enums.EventAttendanceStatus[] = [
     $Enums.EventAttendanceStatus.GOING,

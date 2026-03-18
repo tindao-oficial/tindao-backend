@@ -872,42 +872,72 @@
             "description": "Soft delete an event. Owner or admin only. Cascades to all sub-events."
           },
           "response": []
+        },
+        {
+          "name": "Favorites",
+          "item": [
+            {
+              "name": "Favorite Event",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/events/:eventId/favorite",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["v1", "events", ":eventId", "favorite"],
+                  "variable": [
+                    { "key": "eventId", "value": "{{eventId}}" }
+                  ]
+                },
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "description": "Favorite an event. Returns 201 { isFavorited: true }. Returns 409 if already favorited. Event must be PUBLISHED."
+              }
+            },
+            {
+              "name": "Unfavorite Event",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/events/:eventId/favorite",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["v1", "events", ":eventId", "favorite"],
+                  "variable": [
+                    { "key": "eventId", "value": "{{eventId}}" }
+                  ]
+                },
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "description": "Unfavorite an event. Returns 200 { isFavorited: false }. Returns 404 if not previously favorited."
+              }
+            },
+            {
+              "name": "List My Favorite Events",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/v1/events/favorites?limit=20",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["v1", "events", "favorites"],
+                  "query": [
+                    { "key": "limit", "value": "20" },
+                    { "key": "cursor", "value": "", "disabled": true }
+                  ]
+                },
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+                ],
+                "description": "List events favorited by the authenticated user. Same response format as GET /events. All items have isFavorited: true. Cursor-based pagination using favorite record ID."
+              }
+            }
+          ]
         }
       ]
     },
     {
       "name": "Event Attendance",
       "item": [
-        {
-          "name": "Mark Interest",
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{baseUrl}}/v1/events/:eventId/interest",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "events",
-                ":eventId",
-                "interest"
-              ],
-              "variable": [
-                {
-                  "key": "eventId",
-                  "value": "{{eventId}}"
-                }
-              ]
-            },
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ]
-          }
-        },
         {
           "name": "Mark Going",
           "request": {
@@ -992,42 +1022,6 @@
                   "key": "status",
                   "value": "GOING",
                   "disabled": true
-                },
-                {
-                  "key": "cursor",
-                  "value": "",
-                  "disabled": true
-                }
-              ],
-              "variable": [
-                {
-                  "key": "eventId",
-                  "value": "{{eventId}}"
-                }
-              ]
-            },
-            "header": []
-          }
-        },
-        {
-          "name": "List Interested",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/v1/events/:eventId/interested?limit=20",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "events",
-                ":eventId",
-                "interested"
-              ],
-              "query": [
-                {
-                  "key": "limit",
-                  "value": "20"
                 },
                 {
                   "key": "cursor",

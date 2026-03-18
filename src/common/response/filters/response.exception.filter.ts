@@ -104,7 +104,10 @@ export class ResponseExceptionFilter implements ExceptionFilter {
             this.captureSentryException(exception, request, errorResponse);
         } else if (statusCode >= HttpStatus.BAD_REQUEST) {
             this.logger.warn(
-                `${request.method} ${request.url} - ${statusCode}: ${message}`
+                `${request.method} ${request.url} - ${statusCode}: ${message}`,
+                validationMessages
+                    ? JSON.stringify(validationMessages)
+                    : undefined
             );
         }
 

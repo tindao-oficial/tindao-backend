@@ -14,7 +14,10 @@
         "invite": "Invite info retrieved successfully",
         "organizedList": "Organized events retrieved successfully",
         "userContext": "Event context retrieved successfully",
-        "deleted": "Event deleted successfully"
+        "deleted": "Event deleted successfully",
+        "favorited": "Event favorited",
+        "unfavorited": "Event unfavorited",
+        "favorites": "Favorite events retrieved successfully"
     },
     "error": {
         "notFound": "Event not found",
@@ -29,6 +32,8 @@
         "subEventNotPending": "This sub-event is not awaiting approval",
         "invalidDates": "End date must be after start date",
         "prePartyMustEndBeforeMainEvent": "Pre-party must end before the main event starts",
-        "afterPartyMustStartAfterMainEvent": "After-party must start after the main event ends"
+        "afterPartyMustStartAfterMainEvent": "After-party must start after the main event ends",
+        "alreadyFavorited": "Event is already in your favorites",
+        "notFavorited": "Event is not in your favorites"
     }
 }

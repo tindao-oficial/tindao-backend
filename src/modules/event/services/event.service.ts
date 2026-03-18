@@ -370,35 +370,45 @@ export class EventService implements IEventService {
             },
         });
 
-        // Fetch attendance counts for all retrieved events (avoids N+1)
+        // Fetch attendance and favorites counts for all retrieved events (avoids N+1)
         const eventIds = events.map(e => e.id);
-        const countRows = await this.databaseService.eventAttendance.groupBy({
-            by: ['eventId', 'status'],
-            where: { eventId: { in: eventIds } },
-            _count: { _all: true },
-        });
+        const [attendanceRows, favRows] = await Promise.all([
+            this.databaseService.eventAttendance.groupBy({
+                by: ['eventId', 'status'],
+                where: { eventId: { in: eventIds } },
+                _count: { _all: true },
+            }),
+            this.databaseService.userEventFavorite.groupBy({
+                by: ['eventId'],
+                where: { eventId: { in: eventIds } },
+                _count: { _all: true },
+            }),
+        ]);
 
         const countMap = new Map<
             string,
-            { interested: number; attendees: number }
+            { favorites: number; attendees: number }
         >();
-        for (const row of countRows) {
+        for (const row of attendanceRows) {
             if (!countMap.has(row.eventId)) {
-                countMap.set(row.eventId, { interested: 0, attendees: 0 });
+                countMap.set(row.eventId, { favorites: 0, attendees: 0 });
             }
-            const counts = countMap.get(row.eventId)!;
-            if (row.status === $Enums.EventAttendanceStatus.INTERESTED) {
-                counts.interested += row._count._all;
-            } else if (ELIGIBLE_ATTENDANCE_STATUSES.includes(row.status)) {
-                counts.attendees += row._count._all;
+            if (ELIGIBLE_ATTENDANCE_STATUSES.includes(row.status)) {
+                countMap.get(row.eventId)!.attendees += row._count._all;
             }
+        }
+        for (const row of favRows) {
+            if (!countMap.has(row.eventId)) {
+                countMap.set(row.eventId, { favorites: 0, attendees: 0 });
+            }
+            countMap.get(row.eventId)!.favorites = row._count._all;
         }
 
         // Compute distance + radius filter when geo params are provided
         const radius = query.radius ?? 50;
         let enriched = events.map(e => {
             const counts = countMap.get(e.id) ?? {
-                interested: 0,
+                favorites: 0,
                 attendees: 0,
             };
             const distance =
@@ -412,10 +422,11 @@ export class EventService implements IEventService {
                     : null;
             return {
                 ...this.attachInviteUrl(e),
-                interestedCount: counts.interested,
+                favoritesCount: counts.favorites,
                 attendeesCount: counts.attendees,
                 distance:
                     distance !== null ? Math.round(distance * 10) / 10 : null,
+                isFavorited: null,
             };
         });
 
@@ -459,7 +470,7 @@ export class EventService implements IEventService {
     // ─── Event detail ─────────────────────────────────────────────────────────
 
     async getEventById(id: string): Promise<EventDetailResponseDto> {
-        const [event, interestedCount, attendeesCount] = await Promise.all([
+        const [event, favoritesCount, attendeesCount] = await Promise.all([
             this.databaseService.event.findUnique({
                 where: { id, deletedAt: null },
                 include: {
@@ -492,11 +503,8 @@ export class EventService implements IEventService {
                     },
                 },
             }),
-            this.databaseService.eventAttendance.count({
-                where: {
-                    eventId: id,
-                    status: $Enums.EventAttendanceStatus.INTERESTED,
-                },
+            this.databaseService.userEventFavorite.count({
+                where: { eventId: id },
             }),
             this.databaseService.eventAttendance.count({
                 where: {
@@ -526,8 +534,9 @@ export class EventService implements IEventService {
             ...withInvite(event),
             preParties,
             afterParties,
-            interestedCount,
+            favoritesCount,
             attendeesCount,
+            isFavorited: null,
         } as EventDetailResponseDto;
     }
 
@@ -572,12 +581,9 @@ export class EventService implements IEventService {
             );
         }
 
-        const [interestedCount, attendeesCount] = await Promise.all([
-            this.databaseService.eventAttendance.count({
-                where: {
-                    eventId: event.id,
-                    status: $Enums.EventAttendanceStatus.INTERESTED,
-                },
+        const [favoritesCount, attendeesCount] = await Promise.all([
+            this.databaseService.userEventFavorite.count({
+                where: { eventId: event.id },
             }),
             this.databaseService.eventAttendance.count({
                 where: {
@@ -600,8 +606,9 @@ export class EventService implements IEventService {
             ...withInvite(event),
             preParties,
             afterParties,
-            interestedCount,
+            favoritesCount,
             attendeesCount,
+            isFavorited: null,
         } as EventDetailResponseDto;
     }
 
@@ -955,10 +962,14 @@ export class EventService implements IEventService {
             );
         }
 
-        const attendance =
-            await this.databaseService.eventAttendance.findUnique({
+        const [attendance, favorite] = await Promise.all([
+            this.databaseService.eventAttendance.findUnique({
                 where: { eventId_userId: { eventId, userId } },
-            });
+            }),
+            this.databaseService.userEventFavorite.findUnique({
+                where: { userId_eventId: { userId, eventId } },
+            }),
+        ]);
 
         const attendanceStatus = attendance?.status ?? null;
         const isOrganizer = event.organizerId === userId;
@@ -984,6 +995,7 @@ export class EventService implements IEventService {
             canCreateAfterParty: canCreate(event.afterPartyPermissionMode),
             canManageEvent: isOrganizer && !isCancelled,
             canApproveSubEvents: isOrganizer && !isCancelled,
+            isFavorited: favorite !== null,
         };
     }
 
@@ -1109,38 +1121,48 @@ export class EventService implements IEventService {
             nextCursor = events[events.length - 1].id;
         }
 
-        // Fetch all attendance counts in one grouped query to avoid N+1
+        // Fetch all counts in parallel to avoid N+1
         const eventIds = events.map(e => e.id);
-        const countRows = await this.databaseService.eventAttendance.groupBy({
-            by: ['eventId', 'status'],
-            where: { eventId: { in: eventIds } },
-            _count: { _all: true },
-        });
+        const [attendanceRows, favRows] = await Promise.all([
+            this.databaseService.eventAttendance.groupBy({
+                by: ['eventId', 'status'],
+                where: { eventId: { in: eventIds } },
+                _count: { _all: true },
+            }),
+            this.databaseService.userEventFavorite.groupBy({
+                by: ['eventId'],
+                where: { eventId: { in: eventIds } },
+                _count: { _all: true },
+            }),
+        ]);
 
         const countMap = new Map<
             string,
-            { interested: number; attendees: number }
+            { favorites: number; attendees: number }
         >();
-        for (const row of countRows) {
+        for (const row of attendanceRows) {
             if (!countMap.has(row.eventId)) {
-                countMap.set(row.eventId, { interested: 0, attendees: 0 });
+                countMap.set(row.eventId, { favorites: 0, attendees: 0 });
             }
-            const counts = countMap.get(row.eventId)!;
-            if (row.status === $Enums.EventAttendanceStatus.INTERESTED) {
-                counts.interested += row._count._all;
-            } else if (ELIGIBLE_ATTENDANCE_STATUSES.includes(row.status)) {
-                counts.attendees += row._count._all;
+            if (ELIGIBLE_ATTENDANCE_STATUSES.includes(row.status)) {
+                countMap.get(row.eventId)!.attendees += row._count._all;
             }
+        }
+        for (const row of favRows) {
+            if (!countMap.has(row.eventId)) {
+                countMap.set(row.eventId, { favorites: 0, attendees: 0 });
+            }
+            countMap.get(row.eventId)!.favorites = row._count._all;
         }
 
         const items = events.map(e => {
             const counts = countMap.get(e.id) ?? {
-                interested: 0,
+                favorites: 0,
                 attendees: 0,
             };
             return {
                 ...this.attachInviteUrl(e),
-                interestedCount: counts.interested,
+                favoritesCount: counts.favorites,
                 attendeesCount: counts.attendees,
             };
         });

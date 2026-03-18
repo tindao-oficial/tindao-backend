@@ -44,7 +44,8 @@ src/
 ├── modules/        # Feature modules — controllers, services, DTOs
 │   ├── user/
 │   ├── event/
-│   └── event-attendance/
+│   ├── event-attendance/
+│   └── event-favorite/
 ├── workers/        # Bull queue processors + @nestjs/schedule cron jobs
 └── languages/en/   # i18n JSON files per module (user.json, auth.json, event.json, ...)
 ```
@@ -52,6 +53,7 @@ src/
 **Module dependency rule**: Feature modules import `CommonModule` and specific helpers (`HelperModule`, `DatabaseModule`). Feature modules generally never import each other, with one intentional exception:
 
 - `EventModule` imports `EventAttendanceModule` to validate attendee eligibility for sub-event creation (ATTENDEES_ALLOWED mode). This is a one-way dependency and introduces no circular reference.
+- `EventFavoriteModule` must be registered **before** `EventModule` in `AppModule` so that `GET /events/favorites` is matched before `GET /events/:id`.
 
 ## Key Conventions
 
@@ -142,11 +144,19 @@ Every controller method must use `@DocResponse()`:
 
 ### Attendance status strength order
 ```
-CANCELLED < INTERESTED < GOING < CHECKED_IN < ATTENDED
+CANCELLED < GOING < CHECKED_IN < ATTENDED
 ```
 - Status transitions never downgrade a stronger status (except `cancelAttendance` which always sets CANCELLED)
-- Only `GOING`, `CHECKED_IN`, `ATTENDED` are considered **eligible** for sub-event creation rights
-- `INTERESTED` alone is **not** eligible — this boundary will also apply to future ticket-based access
+- `GOING`, `CHECKED_IN`, `ATTENDED` are **eligible** for sub-event creation rights
+- `INTERESTED` was removed — use the **Favorites** system (`UserEventFavorite`) for "soft interest" signals
+
+### Favorites (UserEventFavorite)
+- Independent of `attendanceStatus` — a user can be `GOING` and have favorited the same event
+- `POST /events/:eventId/favorite` → creates a `UserEventFavorite` record (409 if duplicate)
+- `DELETE /events/:eventId/favorite` → deletes the record (404 if not found)
+- `GET /events/favorites` → paginated list of favorited events (cursor on `UserEventFavorite.id`)
+- `isFavorited` field on all event responses: `null` on public routes, real value on `GET /events/:id/my-context`
+- `favoritesCount` replaces `interestedCount` in all event list/detail responses
 
 ### Invite codes
 - Every event gets a unique 16-char hex `inviteCode` at creation
@@ -182,3 +192,6 @@ Always use `ConfigService.get()`, never `process.env` directly.
 8. `isOrganizer` is admin-only — it cannot be set via the regular user update endpoint (`PUT /user`); use the admin endpoint `PATCH /v1/admin/user/:id/role` + `isOrganizer` toggling requires a separate admin action
 9. `getUserContext()` returns all `false` flags for cancelled events — do not rely on organizer-check alone when computing permissions
 10. Deleting a user (`deleteUser`) cascades to cancel their DRAFT/PUBLISHED events before soft-deleting the user record
+11. `EventFavoriteModule` must be imported before `EventModule` in `AppModule` — order matters for route matching (`GET /events/favorites` vs `GET /events/:id`)
+12. `INTERESTED` no longer exists in `EventAttendanceStatus` — do not reference it anywhere; use Favorites for soft interest signals
+13. `favoritesCount` (not `interestedCount`) is the field on event responses — counts `UserEventFavorite` records, not attendance

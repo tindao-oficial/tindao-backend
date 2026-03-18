@@ -67,80 +67,6 @@ describe('EventAttendanceService', () => {
         expect(service).toBeDefined();
     });
 
-    // ── markInterested ────────────────────────────────────────────────────────
-
-    describe('markInterested', () => {
-        it('should throw 404 if event not found', async () => {
-            mockDb.event.findUnique.mockResolvedValue(null);
-
-            await expect(
-                service.markInterested(USER_ID, EVENT_ID)
-            ).rejects.toThrow(
-                expect.objectContaining({ status: HttpStatus.NOT_FOUND })
-            );
-        });
-
-        it('should throw 422 if event is cancelled', async () => {
-            mockDb.event.findUnique.mockResolvedValue(mockCancelledEvent);
-
-            await expect(
-                service.markInterested(USER_ID, EVENT_ID)
-            ).rejects.toThrow(
-                expect.objectContaining({
-                    status: HttpStatus.UNPROCESSABLE_ENTITY,
-                })
-            );
-        });
-
-        it('should create INTERESTED record when no existing record', async () => {
-            mockDb.event.findUnique.mockResolvedValue(mockActiveEvent);
-            mockDb.eventAttendance.findUnique.mockResolvedValue(null);
-            mockDb.eventAttendance.create.mockResolvedValue(
-                makeAttendance($Enums.EventAttendanceStatus.INTERESTED)
-            );
-
-            const result = await service.markInterested(USER_ID, EVENT_ID);
-
-            expect(mockDb.eventAttendance.create).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    data: expect.objectContaining({
-                        status: $Enums.EventAttendanceStatus.INTERESTED,
-                    }),
-                })
-            );
-            expect(result.status).toBe($Enums.EventAttendanceStatus.INTERESTED);
-        });
-
-        it('should NOT downgrade from GOING to INTERESTED', async () => {
-            mockDb.event.findUnique.mockResolvedValue(mockActiveEvent);
-            mockDb.eventAttendance.findUnique.mockResolvedValue(
-                makeAttendance($Enums.EventAttendanceStatus.GOING)
-            );
-
-            const result = await service.markInterested(USER_ID, EVENT_ID);
-
-            expect(mockDb.eventAttendance.update).not.toHaveBeenCalled();
-            expect(mockDb.eventAttendance.create).not.toHaveBeenCalled();
-            expect(result.status).toBe($Enums.EventAttendanceStatus.GOING);
-        });
-
-        it('should upgrade from CANCELLED to INTERESTED', async () => {
-            const cancelled = makeAttendance(
-                $Enums.EventAttendanceStatus.CANCELLED
-            );
-            mockDb.event.findUnique.mockResolvedValue(mockActiveEvent);
-            mockDb.eventAttendance.findUnique.mockResolvedValue(cancelled);
-            mockDb.eventAttendance.update.mockResolvedValue(
-                makeAttendance($Enums.EventAttendanceStatus.INTERESTED)
-            );
-
-            const result = await service.markInterested(USER_ID, EVENT_ID);
-
-            expect(mockDb.eventAttendance.update).toHaveBeenCalled();
-            expect(result.status).toBe($Enums.EventAttendanceStatus.INTERESTED);
-        });
-    });
-
     // ── markGoing ─────────────────────────────────────────────────────────────
 
     describe('markGoing', () => {
@@ -166,10 +92,10 @@ describe('EventAttendanceService', () => {
             expect(result.status).toBe($Enums.EventAttendanceStatus.GOING);
         });
 
-        it('should upgrade from INTERESTED to GOING', async () => {
+        it('should upgrade from CANCELLED to GOING', async () => {
             mockDb.event.findUnique.mockResolvedValue(mockActiveEvent);
             mockDb.eventAttendance.findUnique.mockResolvedValue(
-                makeAttendance($Enums.EventAttendanceStatus.INTERESTED)
+                makeAttendance($Enums.EventAttendanceStatus.CANCELLED)
             );
             mockDb.eventAttendance.update.mockResolvedValue(
                 makeAttendance($Enums.EventAttendanceStatus.GOING)
@@ -302,7 +228,7 @@ describe('EventAttendanceService', () => {
             ]);
 
             await service.listEventAttendees(EVENT_ID, {
-                status: $Enums.EventAttendanceStatus.INTERESTED,
+                status: $Enums.EventAttendanceStatus.ATTENDED,
                 limit: 20,
             });
 
@@ -310,7 +236,7 @@ describe('EventAttendanceService', () => {
                 expect.objectContaining({
                     where: expect.objectContaining({
                         status: {
-                            in: [$Enums.EventAttendanceStatus.INTERESTED],
+                            in: [$Enums.EventAttendanceStatus.ATTENDED],
                         },
                     }),
                 })
@@ -374,16 +300,6 @@ describe('EventAttendanceService', () => {
             const result = await service.isEligibleAttendee(USER_ID, EVENT_ID);
 
             expect(result).toBe(false);
-        });
-
-        it('should return false for INTERESTED status', async () => {
-            mockDb.eventAttendance.findUnique.mockResolvedValue(
-                makeAttendance($Enums.EventAttendanceStatus.INTERESTED)
-            );
-
-            expect(await service.isEligibleAttendee(USER_ID, EVENT_ID)).toBe(
-                false
-            );
         });
 
         it('should return false for CANCELLED status', async () => {

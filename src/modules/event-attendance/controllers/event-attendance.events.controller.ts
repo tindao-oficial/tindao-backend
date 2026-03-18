@@ -13,8 +13,6 @@ import { PublicRoute } from 'src/common/request/decorators/request.public.decora
 import { AuthUser } from 'src/common/request/decorators/request.user.decorator';
 import { IAuthUser } from 'src/common/request/interfaces/request.interface';
 
-import { $Enums } from '@prisma/client';
-
 import { AttendanceListDto } from '../dtos/request/attendance.list.request';
 import {
     AttendeeListResponseDto,
@@ -27,21 +25,6 @@ import { EventAttendanceService } from '../services/event-attendance.service';
 @Controller({ path: '/events', version: '1' })
 export class EventAttendanceEventsController {
     constructor(private readonly attendanceService: EventAttendanceService) {}
-
-    @Post(':eventId/interest')
-    @ApiBearerAuth('accessToken')
-    @ApiOperation({ summary: 'Mark interest in an event' })
-    @DocResponse({
-        serialization: EventAttendanceResponseDto,
-        httpStatus: HttpStatus.OK,
-        messageKey: 'event-attendance.success.interested',
-    })
-    public async markInterested(
-        @AuthUser() user: IAuthUser,
-        @Param('eventId') eventId: string
-    ): Promise<EventAttendanceResponseDto> {
-        return this.attendanceService.markInterested(user.userId, eventId);
-    }
 
     @Post(':eventId/going')
     @ApiBearerAuth('accessToken')
@@ -88,24 +71,6 @@ export class EventAttendanceEventsController {
         @Query() query: AttendanceListDto
     ): Promise<AttendeeListResponseDto> {
         return this.attendanceService.listEventAttendees(eventId, query);
-    }
-
-    @Get(':eventId/interested')
-    @PublicRoute()
-    @ApiOperation({ summary: 'List users interested in an event' })
-    @DocResponse({
-        serialization: AttendeeListResponseDto,
-        httpStatus: HttpStatus.OK,
-        messageKey: 'event-attendance.success.interestedList',
-    })
-    public async listInterested(
-        @Param('eventId') eventId: string,
-        @Query() query: AttendanceListDto
-    ): Promise<AttendeeListResponseDto> {
-        return this.attendanceService.listEventAttendees(eventId, {
-            ...query,
-            status: $Enums.EventAttendanceStatus.INTERESTED,
-        });
     }
 
     @Get(':eventId/my-attendance')

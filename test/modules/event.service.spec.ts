@@ -114,6 +114,11 @@ const mockDb = {
         count: jest.fn(),
         groupBy: jest.fn(),
     },
+    userEventFavorite: {
+        findUnique: jest.fn(),
+        count: jest.fn(),
+        groupBy: jest.fn(),
+    },
 };
 
 const mockConfig = {
@@ -146,6 +151,9 @@ describe('EventService', () => {
         jest.clearAllMocks();
         mockConfig.get.mockReturnValue('http://localhost:3000');
         mockDb.eventAttendance.groupBy.mockResolvedValue([]);
+        mockDb.userEventFavorite.groupBy.mockResolvedValue([]);
+        mockDb.userEventFavorite.count.mockResolvedValue(0);
+        mockDb.userEventFavorite.findUnique.mockResolvedValue(null);
     });
 
     it('should be defined', () => {
@@ -529,15 +537,14 @@ describe('EventService', () => {
                 },
                 childEvents: [preParty, afterParty],
             });
-            mockDb.eventAttendance.count
-                .mockResolvedValueOnce(10) // interestedCount
-                .mockResolvedValueOnce(5); // attendeesCount
+            mockDb.userEventFavorite.count.mockResolvedValue(10); // favoritesCount
+            mockDb.eventAttendance.count.mockResolvedValue(5); // attendeesCount
 
             const result = await service.getEventById(EVENT_ID);
 
             expect(result.preParties).toHaveLength(1);
             expect(result.afterParties).toHaveLength(1);
-            expect(result.interestedCount).toBe(10);
+            expect(result.favoritesCount).toBe(10);
             expect(result.attendeesCount).toBe(5);
             expect(result).toHaveProperty('inviteUrl');
         });
@@ -918,17 +925,17 @@ describe('EventService', () => {
             expect(result.isOrganizer).toBe(false);
         });
 
-        it('should return canCreate=false for ATTENDEES_ALLOWED when user is only INTERESTED', async () => {
+        it('should return canCreate=false for ATTENDEES_ALLOWED when user is only CANCELLED', async () => {
             mockDb.event.findUnique.mockResolvedValue(mockMainEvent); // afterParty = ATTENDEES_ALLOWED
             mockDb.eventAttendance.findUnique.mockResolvedValue({
-                status: $Enums.EventAttendanceStatus.INTERESTED,
+                status: $Enums.EventAttendanceStatus.CANCELLED,
             });
 
             const result = await service.getUserContext(USER_ID, EVENT_ID);
 
             expect(result.canCreateAfterParty).toBe(false);
             expect(result.attendanceStatus).toBe(
-                $Enums.EventAttendanceStatus.INTERESTED
+                $Enums.EventAttendanceStatus.CANCELLED
             );
         });
 
@@ -1034,14 +1041,9 @@ describe('EventService', () => {
     // ── getMyOrganizedEvents ──────────────────────────────────────────────────
 
     describe('getMyOrganizedEvents', () => {
-        it('should return organized events with attendee counts', async () => {
+        it('should return organized events with attendee and favorites counts', async () => {
             mockDb.event.findMany.mockResolvedValue([mockMainEvent]);
             mockDb.eventAttendance.groupBy.mockResolvedValue([
-                {
-                    eventId: EVENT_ID,
-                    status: $Enums.EventAttendanceStatus.INTERESTED,
-                    _count: { _all: 8 },
-                },
                 {
                     eventId: EVENT_ID,
                     status: $Enums.EventAttendanceStatus.GOING,
@@ -1053,25 +1055,32 @@ describe('EventService', () => {
                     _count: { _all: 3 },
                 },
             ]);
+            mockDb.userEventFavorite.groupBy.mockResolvedValue([
+                {
+                    eventId: EVENT_ID,
+                    _count: { _all: 12 },
+                },
+            ]);
 
             const result = await service.getMyOrganizedEvents(ORGANIZER_ID, {
                 limit: 20,
             });
 
             expect(result.items).toHaveLength(1);
-            expect(result.items[0].interestedCount).toBe(8);
+            expect(result.items[0].favoritesCount).toBe(12);
             expect(result.items[0].attendeesCount).toBe(8); // GOING(5) + ATTENDED(3)
         });
 
         it('should return zero counts when no attendance records exist', async () => {
             mockDb.event.findMany.mockResolvedValue([mockMainEvent]);
             mockDb.eventAttendance.groupBy.mockResolvedValue([]);
+            mockDb.userEventFavorite.groupBy.mockResolvedValue([]);
 
             const result = await service.getMyOrganizedEvents(ORGANIZER_ID, {
                 limit: 20,
             });
 
-            expect(result.items[0].interestedCount).toBe(0);
+            expect(result.items[0].favoritesCount).toBe(0);
             expect(result.items[0].attendeesCount).toBe(0);
         });
 

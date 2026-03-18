@@ -18,19 +18,17 @@ import {
 
 /**
  * Status strength order (highest to lowest):
- * ATTENDED > CHECKED_IN > GOING > INTERESTED > CANCELLED
+ * ATTENDED > CHECKED_IN > GOING > CANCELLED
  *
  * Transition rules:
- * - markInterested: creates INTERESTED, upgrades CANCELLED; does NOT downgrade stronger statuses
- * - markGoing:      creates/upgrades to GOING from INTERESTED/CANCELLED; does NOT downgrade CHECKED_IN/ATTENDED
+ * - markGoing:        creates/upgrades to GOING from CANCELLED; does NOT downgrade CHECKED_IN/ATTENDED
  * - cancelAttendance: always sets CANCELLED regardless of current status
  */
 const STATUS_STRENGTH: Record<$Enums.EventAttendanceStatus, number> = {
     [$Enums.EventAttendanceStatus.CANCELLED]: 0,
-    [$Enums.EventAttendanceStatus.INTERESTED]: 1,
-    [$Enums.EventAttendanceStatus.GOING]: 2,
-    [$Enums.EventAttendanceStatus.CHECKED_IN]: 3,
-    [$Enums.EventAttendanceStatus.ATTENDED]: 4,
+    [$Enums.EventAttendanceStatus.GOING]: 1,
+    [$Enums.EventAttendanceStatus.CHECKED_IN]: 2,
+    [$Enums.EventAttendanceStatus.ATTENDED]: 3,
 };
 
 const ATTENDEE_SELECT = {
@@ -102,18 +100,6 @@ export class EventAttendanceService implements IEventAttendanceService {
     }
 
     // ─── Public service methods ────────────────────────────────────────────────
-
-    async markInterested(
-        userId: string,
-        eventId: string
-    ): Promise<EventAttendanceResponseDto> {
-        await this.requireActiveEvent(eventId);
-        return this.upsertAttendance(
-            userId,
-            eventId,
-            $Enums.EventAttendanceStatus.INTERESTED
-        );
-    }
 
     async markGoing(
         userId: string,
@@ -249,14 +235,8 @@ export class EventAttendanceService implements IEventAttendanceService {
 
     /**
      * Returns true if the user has an eligible attendance status for the given event.
-     *
      * Eligible statuses: GOING, CHECKED_IN, ATTENDED.
-     * INTERESTED alone is not sufficient to grant sub-event creation rights.
-     *
      * Used by EventService when SubEventPermissionMode = ATTENDEES_ALLOWED.
-     * TODO (EventService): replace the temporary open-access TODO with:
-     *   const eligible = await eventAttendanceService.isEligibleAttendee(userId, parentEventId);
-     *   if (!eligible) throw new HttpException('event.error.subEventPermissionDenied', 403);
      */
     async isEligibleAttendee(
         userId: string,

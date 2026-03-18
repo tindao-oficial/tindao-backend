@@ -217,6 +217,18 @@ export class EventResponseDto implements Partial<Event> {
     @IsEnum($Enums.SubEventApprovalStatus)
     @IsOptional()
     approvalStatus: $Enums.SubEventApprovalStatus | null;
+
+    @ApiProperty({
+        example: null,
+        nullable: true,
+        required: false,
+        description:
+            'Whether the authenticated user has favorited this event. null when not authenticated.',
+    })
+    @Expose()
+    @IsBoolean()
+    @IsOptional()
+    isFavorited: boolean | null;
 }
 
 export class EventSubResponseDto extends EventResponseDto {
@@ -244,11 +256,11 @@ export class EventDetailResponseDto extends EventResponseDto {
 
     @ApiProperty({
         example: 42,
-        description: 'Number of users marked as INTERESTED',
+        description: 'Number of users who favorited this event',
     })
     @Expose()
     @IsNumber()
-    interestedCount: number;
+    favoritesCount: number;
 
     @ApiProperty({
         example: 15,
@@ -268,11 +280,11 @@ export class EventListItemResponseDto extends EventResponseDto {
 
     @ApiProperty({
         example: 42,
-        description: 'Number of users marked as INTERESTED',
+        description: 'Number of users who favorited this event',
     })
     @Expose()
     @IsNumber()
-    interestedCount: number;
+    favoritesCount: number;
 
     @ApiProperty({
         example: 15,
@@ -351,11 +363,11 @@ export class EventInviteResponseDto {
 export class OrganizedEventResponseDto extends EventResponseDto {
     @ApiProperty({
         example: 42,
-        description: 'Number of users marked as INTERESTED',
+        description: 'Number of users who favorited this event',
     })
     @Expose()
     @IsNumber()
-    interestedCount: number;
+    favoritesCount: number;
 
     @ApiProperty({
         example: 15,
@@ -420,6 +432,14 @@ export class EventUserContextResponseDto {
     @Expose()
     @IsBoolean()
     canApproveSubEvents: boolean;
+
+    @ApiProperty({
+        example: false,
+        description: 'Whether the current user has favorited this event',
+    })
+    @Expose()
+    @IsBoolean()
+    isFavorited: boolean;
 }
 
 export class OrganizedEventListResponseDto {

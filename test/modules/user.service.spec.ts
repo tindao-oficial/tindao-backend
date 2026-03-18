@@ -13,6 +13,7 @@ describe('UserService', () => {
         user: {
             findUnique: jest.fn(),
             update: jest.fn(),
+            findMany: jest.fn(),
         },
         event: {
             updateMany: jest.fn(),
@@ -133,6 +134,122 @@ describe('UserService', () => {
                 data: { role: Role.ADMIN },
             });
             expect(result.role).toBe(Role.ADMIN);
+        });
+    });
+
+    describe('updateOrganizer', () => {
+        it('should throw 404 if user not found', async () => {
+            mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+            await expect(
+                service.updateOrganizer('non-existent-id', true)
+            ).rejects.toThrow(HttpException);
+        });
+
+        it('should grant organizer privilege', async () => {
+            const mockUser = { id: '123', isOrganizer: false, deletedAt: null };
+            mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+            mockPrismaService.user.update.mockResolvedValue({
+                ...mockUser,
+                isOrganizer: true,
+            });
+
+            const result = await service.updateOrganizer('123', true);
+
+            expect(mockPrismaService.user.update).toHaveBeenCalledWith({
+                where: { id: '123' },
+                data: { isOrganizer: true },
+            });
+            expect(result.isOrganizer).toBe(true);
+        });
+
+        it('should revoke organizer privilege', async () => {
+            const mockUser = { id: '123', isOrganizer: true, deletedAt: null };
+            mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
+            mockPrismaService.user.update.mockResolvedValue({
+                ...mockUser,
+                isOrganizer: false,
+            });
+
+            const result = await service.updateOrganizer('123', false);
+
+            expect(result.isOrganizer).toBe(false);
+        });
+    });
+
+    describe('listUsers', () => {
+        const mockUser = {
+            id: '123',
+            firstName: 'João',
+            lastName: 'Silva',
+            email: 'joao@test.com',
+            deletedAt: null,
+        };
+
+        it('should return users without filters', async () => {
+            mockPrismaService.user.findMany.mockResolvedValue([mockUser]);
+
+            const result = await service.listUsers({ limit: 20 });
+
+            expect(result.items).toHaveLength(1);
+            expect(result.nextCursor).toBeNull();
+        });
+
+        it('should filter by role', async () => {
+            mockPrismaService.user.findMany.mockResolvedValue([mockUser]);
+
+            await service.listUsers({ role: Role.ADMIN, limit: 20 });
+
+            expect(mockPrismaService.user.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({ role: Role.ADMIN }),
+                })
+            );
+        });
+
+        it('should filter by isOrganizer', async () => {
+            mockPrismaService.user.findMany.mockResolvedValue([mockUser]);
+
+            await service.listUsers({ isOrganizer: true, limit: 20 });
+
+            expect(mockPrismaService.user.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({ isOrganizer: true }),
+                })
+            );
+        });
+
+        it('should filter by search term', async () => {
+            mockPrismaService.user.findMany.mockResolvedValue([mockUser]);
+
+            await service.listUsers({ search: 'João', limit: 20 });
+
+            expect(mockPrismaService.user.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({
+                        OR: expect.arrayContaining([
+                            expect.objectContaining({
+                                firstName: expect.objectContaining({
+                                    contains: 'João',
+                                }),
+                            }),
+                        ]),
+                    }),
+                })
+            );
+        });
+
+        it('should return nextCursor when more results exist than limit', async () => {
+            const users = [
+                { ...mockUser, id: 'u-1' },
+                { ...mockUser, id: 'u-2' },
+            ];
+            mockPrismaService.user.findMany.mockResolvedValue(users);
+
+            const result = await service.listUsers({ limit: 1 });
+
+            expect(result.items).toHaveLength(1);
+            expect(result.nextCursor).toBe('u-1');
         });
     });
 
