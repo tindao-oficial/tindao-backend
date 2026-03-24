@@ -2,6 +2,7 @@ import {
     Body,
     Controller,
     Get,
+    HttpCode,
     HttpStatus,
     Post,
     UseGuards,
@@ -79,5 +80,17 @@ export class AuthPublicController {
         @AuthUser() user: IAuthUser
     ): Promise<AuthRefreshResponseDto> {
         return this.authService.refreshTokens(user);
+    }
+
+    @Post('logout')
+    @HttpCode(HttpStatus.OK)
+    @ApiBearerAuth('accessToken')
+    @ApiOperation({ summary: 'Logout and invalidate access token' })
+    @DocResponse({
+        httpStatus: HttpStatus.OK,
+        messageKey: 'auth.success.logout',
+    })
+    public logout(@AuthUser() user: IAuthUser): Promise<void> {
+        return this.authService.logout(user.userId);
     }
 }

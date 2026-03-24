@@ -77,7 +77,11 @@ Envie o `refreshToken` no header `Authorization: Bearer <refreshToken>`. Retorna
 POST /v1/auth/logout
 ```
 
-Invalida a sessão atual.
+**Requer:** `Authorization: Bearer <accessToken>`.
+
+Invalida completamente a sessão do usuário via blocklist no Redis. Tanto o access token quanto o refresh token são bloqueados — qualquer requisição subsequente usando esses tokens receberá `401 Unauthorized`.
+
+**Mecanismo:** é gravada a chave `auth:logout:<userId>` no Redis com o timestamp do logout e TTL de 7 dias (lifetime do refresh token). Ambas as estratégias JWT (`JwtAccessStrategy` e `JwtRefreshStrategy`) verificam essa chave e rejeitam tokens emitidos antes do logout.
 
 ---
 
@@ -277,7 +281,7 @@ POST /v1/events/:eventId/sub-events
 | `ORGANIZER_ONLY` | Apenas o organizador do evento principal |
 | `ATTENDEES_ALLOWED` | Organizador + usuários com presença confirmada (GOING, CHECKED_IN ou ATTENDED) |
 
-> Usuários com status apenas `INTERESTED` **não** podem criar sub-eventos no modo `ATTENDEES_ALLOWED`. É necessário confirmar presença.
+> Para criar sub-eventos no modo `ATTENDEES_ALLOWED` é necessário confirmar presença (`GOING`, `CHECKED_IN` ou `ATTENDED`). Favoritar o evento não concede esse direito.
 
 ### Campos do sub-evento
 

@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 
 import { APP_BULL_QUEUES } from 'src/app/enums/app.enum';
 
+import { CacheModule } from '../cache/cache.module';
 import { DatabaseModule } from '../database/database.module';
 import { HelperModule } from '../helper/helper.module';
 
@@ -18,6 +19,7 @@ import { AuthService } from './services/auth.service';
         HelperModule,
         PassportModule,
         DatabaseModule,
+        CacheModule,
         BullModule.registerQueue({
             name: APP_BULL_QUEUES.EMAIL,
         }),

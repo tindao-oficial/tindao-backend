@@ -6,6 +6,7 @@ import { Role } from '@prisma/client';
 
 import { APP_BULL_QUEUES } from 'src/app/enums/app.enum';
 import { AuthService } from 'src/common/auth/services/auth.service';
+import { CacheService } from 'src/common/cache/services/cache.service';
 import { DatabaseService } from 'src/common/database/services/database.service';
 import { HelperEncryptionService } from 'src/common/helper/services/helper.encryption.service';
 
@@ -33,6 +34,11 @@ describe('AuthService', () => {
         add: jest.fn(),
     };
 
+    const mockCacheService = {
+        set: jest.fn(),
+        get: jest.fn(),
+    };
+
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -45,6 +51,10 @@ describe('AuthService', () => {
                 {
                     provide: ConfigService,
                     useValue: mockConfigService,
+                },
+                {
+                    provide: CacheService,
+                    useValue: mockCacheService,
                 },
                 {
                     provide: getQueueToken(APP_BULL_QUEUES.EMAIL),
@@ -178,6 +188,20 @@ describe('AuthService', () => {
             });
 
             expect(result).toEqual(tokens);
+        });
+    });
+
+    describe('logout', () => {
+        it('should store logout timestamp in cache', async () => {
+            mockCacheService.set.mockResolvedValue(undefined);
+
+            await service.logout('123');
+
+            expect(mockCacheService.set).toHaveBeenCalledWith(
+                'auth:logout:123',
+                expect.any(Number),
+                604800
+            );
         });
     });
 });

@@ -65,6 +65,7 @@ src/
 - All auth token responses include `expiresAt` (epoch ms) for client-side refresh scheduling
 - **Google Sign-In**: `POST /v1/auth/google` accepts `{ idToken }`, validates via `google-auth-library`, upserts user by email/googleId
 - User `password` is nullable — Google-only users have no password; email login checks and returns `auth.error.useGoogleLogin` if password is null
+- **Logout**: `POST /v1/auth/logout` writes `auth:logout:<userId>` to Redis (value = Unix timestamp in seconds, TTL = 604800s = 7d). Both `JwtAccessStrategy` and `JwtRefreshStrategy` reject tokens with `iat ≤ logoutAt`. TTL matches refresh token lifetime so both tokens are fully blocked until the last possible expiry.
 - Global guards also apply `ThrottlerGuard` (rate limiting: 10 req/60s)
 
 ### API Response Pattern

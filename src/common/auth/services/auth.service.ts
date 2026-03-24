@@ -7,6 +7,7 @@ import { OAuth2Client } from 'google-auth-library';
 
 import { APP_BULL_QUEUES } from 'src/app/enums/app.enum';
 import { AWS_SES_EMAIL_TEMPLATES } from 'src/common/aws/enums/aws.ses.enum';
+import { CacheService } from 'src/common/cache/services/cache.service';
 import { DatabaseService } from 'src/common/database/services/database.service';
 import {
     ISendEmailBasePayload,
@@ -29,10 +30,16 @@ export class AuthService implements IAuthService {
     private readonly logger = new Logger(AuthService.name);
     private readonly googleClient: OAuth2Client;
 
+    // TTL must match the refresh token lifetime (AUTH_REFRESH_TOKEN_EXP, default 7d)
+    // Using the longer lifetime ensures both access and refresh tokens are blocked
+    // until the last issued token could possibly expire.
+    private readonly LOGOUT_TTL_SECONDS = 604800;
+
     constructor(
         private readonly databaseService: DatabaseService,
         private readonly helperEncryptionService: HelperEncryptionService,
         private readonly configService: ConfigService,
+        private readonly cacheService: CacheService,
         @InjectQueue(APP_BULL_QUEUES.EMAIL)
         private emailQueue: Queue
     ) {
@@ -235,5 +242,13 @@ export class AuthService implements IAuthService {
             userId: payload.userId,
             role: payload.role,
         });
+    }
+
+    public async logout(userId: string): Promise<void> {
+        await this.cacheService.set(
+            `auth:logout:${userId}`,
+            Math.floor(Date.now() / 1000),
+            this.LOGOUT_TTL_SECONDS
+        );
     }
 }

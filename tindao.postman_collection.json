@@ -171,7 +171,8 @@
                 "key": "Authorization",
                 "value": "Bearer {{accessToken}}"
               }
-            ]
+            ],
+            "description": "Invalidates the current access token by adding it to the Redis blocklist. Any subsequent request using this token will receive 401."
           }
         },
         {
@@ -562,7 +563,12 @@
           "name": "Publish Event",
           "request": {
             "method": "PATCH",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/v1/events/{{eventId}}/publish",
               "host": [

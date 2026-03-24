@@ -13,4 +13,5 @@ export interface IAuthService {
     signup(data: UserCreateDto): Promise<AuthResponseDto>;
     googleLogin(data: GoogleAuthDto): Promise<AuthResponseDto>;
     refreshTokens(payload: IAuthUser): Promise<AuthRefreshResponseDto>;
+    logout(userId: string): Promise<void>;
 }

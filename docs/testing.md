@@ -26,7 +26,7 @@ O projeto usa **testes unitários** com Jest + SWC (compilação rápida, sem `t
 
 Todos os testes ficam em `test/` e seguem a mesma estrutura de `src/`.
 
-**Estado atual:** 17 suites, ~308 testes. Alguns métodos novos ainda precisam de cobertura (ver seção 6).
+**Estado atual:** 17 suites, ~316 testes. Alguns métodos novos ainda precisam de cobertura (ver seção 6).
 
 ---
 
@@ -244,6 +244,15 @@ const mockConfig = {
 ---
 
 ## 6. O que está coberto
+
+### AuthService (`test/common/auth.service.spec.ts`)
+
+| Método | Cenários testados |
+|--------|------------------|
+| `login` | Usuário não encontrado, senha incorreta, sucesso com tokens |
+| `signup` | Usuário já existe, sucesso com criação + email enfileirado |
+| `refreshTokens` | Sucesso com novos tokens |
+| `logout` | Armazena timestamp no Redis com TTL correto |
 
 ### EventService (`test/modules/event.service.spec.ts`)
 
